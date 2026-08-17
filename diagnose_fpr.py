@@ -11,11 +11,13 @@ blocked and by which layer, so false positives can be inspected directly.
 
 Usage:
     conda activate RAG
-    cp diagnose_fpr.py "SecureRAG_Fixed/"
-    cd "SecureRAG_Fixed"
-    python3 diagnose_fpr.py
+    python3 diagnose_fpr.py --model Mistral-7B
+    python3 diagnose_fpr.py --model Llama-3.2-3B
+    python3 diagnose_fpr.py --model Phi-3.5-Mini
+    (omit --model to be prompted interactively)
 """
 
+import argparse
 import sys
 import os
 import csv
@@ -23,17 +25,24 @@ import random
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from src.config import settings
 from src.pipeline import SecureRAG
 from src.attacks.generator import RealisticAttackGenerator
+from model_select import add_model_arg, resolve_model, safe_filename
 
 BENIGN_COUNT = 333
 SEED = 42
-OUT_CSV = "benign_fpr_diagnosis.csv"
 
 
 def run():
-    print("Loading SecureRAG...")
-    rag = SecureRAG(enable_defenses=True)
+    parser = argparse.ArgumentParser(description=__doc__)
+    add_model_arg(parser)
+    args = parser.parse_args()
+    selected_model = resolve_model(args.model)
+    out_csv = f"benign_fpr_diagnosis__{safe_filename(selected_model)}.csv"
+
+    print(f"Loading SecureRAG ({selected_model})...")
+    rag = SecureRAG(enable_defenses=True, model_path=settings.LLM_MODEL_PATH)
 
     print("Building benign query set (same method as thesis_evaluation.py)...")
     gen = RealisticAttackGenerator()
@@ -66,12 +75,12 @@ def run():
     print(f"\n\nTotal false positives: {fp_count}/{len(benign)} "
           f"({100*fp_count/len(benign):.2f}%)\n")
 
-    with open(OUT_CSV, "w", newline="", encoding="utf-8") as f:
+    with open(out_csv, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=list(results[0].keys()))
         writer.writeheader()
         writer.writerows(results)
 
-    print(f"Full details saved to: {OUT_CSV}\n")
+    print(f"Full details saved to: {out_csv}\n")
 
     print("=== False positives (blocked benign queries) ===")
     for r in results:

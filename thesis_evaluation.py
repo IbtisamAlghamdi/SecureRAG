@@ -1,5 +1,5 @@
 
-import sys, os, json, time, math, random, statistics
+import argparse, sys, os, json, time, math, random, statistics
 from typing import Dict, List, Tuple
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -11,6 +11,7 @@ from src.defenses.rules.rule_filter import rule_based_detector_detailed
 from src.defenses.anomaly.anomaly_detector import compute_anomaly_score
 from src.defenses.semantic.semantic_detector import semantic_response_is_suspicious
 from src.config import settings
+from model_select import add_model_arg, resolve_model, safe_filename
 
 import matplotlib
 matplotlib.use('Agg')
@@ -18,8 +19,23 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
 
+# ── Model selection ──────────────────────────────────────────────────────
+# Resolved once, at import time, so every output path below can be
+# namespaced by model -- running this once per model (Mistral-7B,
+# Llama-3.2-3B, Phi-3.5-Mini, ...) never overwrites another model's
+# results. Nothing else in this script changes based on which model is
+# selected: same thresholds, same corpus, same prompt template (see
+# SecureRAG(model_path=...) in src/pipeline.py) -- a true model-only
+# comparison.
+_arg_parser = argparse.ArgumentParser(
+    description="SecureRAG thesis evaluation -- 5-seed multirun + ablation study."
+)
+add_model_arg(_arg_parser)
+_args = _arg_parser.parse_args()
+SELECTED_MODEL = resolve_model(_args.model)
+
 # ── ─────────────────────────
-OUT_DIR      = "outputs/thesis_v2"
+OUT_DIR      = os.path.join("outputs", "thesis_v2", safe_filename(SELECTED_MODEL))
 PLOTS_DIR    = os.path.join(OUT_DIR, "plots")
 OUTPUT_JSON  = os.path.join(OUT_DIR, "thesis_results.json")
 LATEX_FILE   = os.path.join(OUT_DIR, "thesis_latex_snippets.txt")
@@ -146,8 +162,8 @@ def evaluate(rag, attacks, benign, label=""):
 
 # AblationRAG — Modified version without changing the original code
 class AblationRAG(SecureRAG):
-    def __init__(self, l1=True, l2=True, l3=True, l4=True):
-        super().__init__(enable_defenses=True)
+    def __init__(self, l1=True, l2=True, l3=True, l4=True, model_path=None):
+        super().__init__(enable_defenses=True, model_path=model_path)
         self.l1, self.l2, self.l3, self.l4 = l1, l2, l3, l4
 
     def run(self, query):
@@ -515,6 +531,7 @@ def load_sc_examples():
 def main():
     print(SEP)
     print("SecureRAG — Thesis Evaluation v2")
+    print(f"Model            : {SELECTED_MODEL}")
     print(f"Output directory : {OUT_DIR}")
     print(f"Runs: {N_RUNS}  |  Attacks: {ATTACK_COUNT}  |  Benign: {BENIGN_COUNT}")
     print(SEP)
@@ -525,7 +542,7 @@ def main():
     print("PART 1 — 5-Run Full Evaluation")
     print(SEP)
 
-    rag  = SecureRAG(enable_defenses=True)
+    rag  = SecureRAG(enable_defenses=True, model_path=settings.LLM_MODEL_PATH)
     runs = []
     for i, seed in enumerate(SEEDS):
         print(f"\nRun {i+1}/{N_RUNS}  (seed={seed})")
@@ -600,7 +617,7 @@ def main():
 
     for name, l1, l2, l3, l4 in configs:
         print(f"\nConfig: {name}")
-        abl_rag = AblationRAG(l1=l1, l2=l2, l3=l3, l4=l4)
+        abl_rag = AblationRAG(l1=l1, l2=l2, l3=l3, l4=l4, model_path=settings.LLM_MODEL_PATH)
         res = evaluate(abl_rag, atk_abl, ben_abl, label=name)
         ablation[name] = {
             'ASR':     res['ASR'],
@@ -644,7 +661,7 @@ def main():
     # ──  JSON ──────────────────────────────────────────────────────────────
     output = {
         'generated_at':  time.strftime('%Y-%m-%d %H:%M:%S'),
-        'config': {'n_runs': N_RUNS, 'seeds': SEEDS,
+        'config': {'model': SELECTED_MODEL, 'n_runs': N_RUNS, 'seeds': SEEDS,
                    'attack_count': ATTACK_COUNT, 'benign_count': BENIGN_COUNT},
         'full_evaluation':   full_summary,
         'ablation_study':    ablation,

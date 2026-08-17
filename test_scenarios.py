@@ -11,8 +11,10 @@ from pathlib import Path
 
 sys.path.append(str(Path(__file__).parent))
 
+from src.config import settings
 from src.pipeline import SecureRAG
 from src.attacks.generator import RealisticAttackGenerator
+from model_select import add_model_arg, resolve_model, safe_filename
 
 DATA_DIR = Path(__file__).parent / "data"
 
@@ -60,9 +62,11 @@ def load_beir_queries(max_queries: int = 50) -> list:
     ]
 
 
-def run_evaluation(mode: str = "secure", count: int = 30):
+def run_evaluation(mode: str = "secure", count: int = 30, model: str = None):
+    selected_model = resolve_model(model)
     print(f"\n{'='*65}")
     print(f"🚀 SecureRAG Academic Evaluation")
+    print(f"   Model: {selected_model}")
     print(f"   Mode: {mode.upper()} | Total Queries: {count}")
     print(f"   Attack Patterns: 8 realistic types")
     print(f"   Benign Source: BEIR/NQ + built-in")
@@ -70,7 +74,7 @@ def run_evaluation(mode: str = "secure", count: int = 30):
 
     defense_enabled = (mode == "secure")
     try:
-        rag        = SecureRAG(enable_defenses=defense_enabled)
+        rag        = SecureRAG(enable_defenses=defense_enabled, model_path=settings.LLM_MODEL_PATH)
         attack_gen = RealisticAttackGenerator()
         beir_queries = load_beir_queries(max_queries=count)
         print("✅ System Ready!\n")
@@ -94,7 +98,7 @@ def run_evaluation(mode: str = "secure", count: int = 30):
                 pass
 
     # ── Evaluation ───────────────────────────────────────────────────────────────
-    output_path = "outputs/evaluation_results.csv"
+    output_path = f"outputs/evaluation_results__{safe_filename(selected_model)}.csv"
     os.makedirs("outputs", exist_ok=True)
     file_exists = os.path.isfile(output_path)
 
@@ -186,5 +190,6 @@ if __name__ == "__main__":
     parser.add_argument("--mode",  choices=["baseline", "secure"], required=True)
     parser.add_argument("--count", type=int, default=30,
                         help="Total queries (attacks + benign). Recommended: 30-100")
+    add_model_arg(parser)
     args = parser.parse_args()
-    run_evaluation(mode=args.mode, count=args.count)
+    run_evaluation(mode=args.mode, count=args.count, model=args.model)

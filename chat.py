@@ -1,8 +1,8 @@
 import os
-import sys
 import time
 from src.config import settings
 from src.pipeline import SecureRAG
+from model_select import resolve_model
 
 def check_system_readiness():
     print("\n" + "="*55)
@@ -34,28 +34,6 @@ def check_system_readiness():
 
     print("="*55 + "\n")
 
-def select_model():
-    models = list(settings.MODELS_CONFIG.keys())
-    print("\n🤖 Select a model:")
-    for i, name in enumerate(models):
-        path = os.path.join(settings.MODELS_DIR, settings.MODELS_CONFIG[name]['file'])
-        status = "✅" if os.path.exists(path) else "❌"
-        print(f"  {i+1}. {status} {name} ({settings.MODELS_CONFIG[name]['type']})")
-
-    choice = input("\nModel number (default 3 = Mistral-7B): ").strip()
-    idx = int(choice) - 1 if choice.isdigit() and 0 < int(choice) <= len(models) else 2
-
-    selected = models[idx]
-    settings.GGUF_FILE = settings.MODELS_CONFIG[selected]["file"]
-    settings.LLM_MODEL_PATH = os.path.join(settings.MODELS_DIR, settings.GGUF_FILE)
-
-    if not os.path.exists(settings.LLM_MODEL_PATH):
-        print(f"\n❌ Model not found: {settings.LLM_MODEL_PATH}")
-        print("👉 Run: python3 download_models.py")
-        sys.exit(1)
-
-    return selected
-
 def start_chat():
     print("\n" + "="*60)
     print("🛡️   SecureRAG — Multi-Layered Adaptive Defense Framework")
@@ -63,11 +41,11 @@ def start_chat():
     print("🚀 Version: V7 | Embedding: sentence-transformers (MiniLM-L6)")
 
     check_system_readiness()
-    selected_model = select_model()
+    selected_model = resolve_model()
     print(f"\n🔄 Initializing {selected_model}...")
 
     try:
-        rag = SecureRAG(enable_defenses=True)
+        rag = SecureRAG(enable_defenses=True, model_path=settings.LLM_MODEL_PATH)
     except Exception as e:
         print(f"❌ Initialization Error: {e}")
         import traceback; traceback.print_exc()

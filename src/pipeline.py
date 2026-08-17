@@ -52,14 +52,22 @@ class SecureRAG:
     """
 SecureRAG Framework — A five-layer defense built on System Boundaries    """
 
-    def __init__(self, enable_defenses: bool = True):
+    def __init__(self, enable_defenses: bool = True, model_path: str = None):
+        """
+        `model_path` lets a caller pick which downloaded GGUF model to use
+        for the generator (see model_select.py) WITHOUT touching anything
+        else -- defense thresholds, corpus, retrieval, chunking all come
+        from settings.py exactly the same way regardless of model choice,
+        so swapping models is a true apples-to-apples comparison. Defaults
+        to whatever settings.LLM_MODEL_PATH currently points to.
+        """
         self.enable_defenses = enable_defenses
         self.embedder  = Embedder()
         self.retriever = FaissRetriever(
             corpus_path=settings.CORPUS_DIR,
             embedder=self.embedder
         )
-        self.llm = LLMEngine()
+        self.llm = LLMEngine(model_path=model_path)
 
         # Session Statistics
         self._session_stats = {

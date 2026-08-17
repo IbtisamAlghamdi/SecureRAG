@@ -10,17 +10,13 @@ same call pattern used in run_external_eval.py and thesis_evaluation.py
 Every sample here is genuinely benign (no attack inserted). Any query
 that gets blocked is, by definition, a FALSE POSITIVE.
 
-*** Place this file inside the project folder "SecureRAG_Fixed 2" (next to
-    thesis_evaluation.py and chat.py) before running, so the import works. ***
-
 Usage:
     conda activate RAG
-    cp run_external_fpr_eval.py "SecureRAG_Fixed 2/"
-    cp fpr_set.json "SecureRAG_Fixed 2/"
-    cd "SecureRAG_Fixed 2"
-    python3 run_external_fpr_eval.py
+    python3 run_external_fpr_eval.py --model Mistral-7B
+    (omit --model to be prompted interactively)
 """
 
+import argparse
 import sys
 import os
 import json
@@ -30,12 +26,12 @@ from collections import defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from src.config import settings
 from src.pipeline import SecureRAG  # same import used in thesis_evaluation.py
+from model_select import add_model_arg, resolve_model, safe_filename
 
 SCRIPT_DIR = Path(__file__).parent
 FPR_SET_PATH = SCRIPT_DIR / "fpr_set.json"
-RESULTS_CSV_PATH = SCRIPT_DIR / "bipia_external_fpr_results.csv"
-SUMMARY_JSON_PATH = SCRIPT_DIR / "bipia_external_fpr_summary.json"
 
 
 def load_fpr_set():
@@ -48,9 +44,17 @@ def load_fpr_set():
 
 
 def run():
+    parser = argparse.ArgumentParser(description=__doc__)
+    add_model_arg(parser)
+    args = parser.parse_args()
+    selected_model = resolve_model(args.model)
+    suffix = safe_filename(selected_model)
+    results_csv_path = SCRIPT_DIR / f"bipia_external_fpr_results__{suffix}.csv"
+    summary_json_path = SCRIPT_DIR / f"bipia_external_fpr_summary__{suffix}.json"
+
     samples = load_fpr_set()
-    print("Loading SecureRAG (same as thesis_evaluation.py)...")
-    rag = SecureRAG(enable_defenses=True)
+    print(f"Loading SecureRAG ({selected_model})...")
+    rag = SecureRAG(enable_defenses=True, model_path=settings.LLM_MODEL_PATH)
     print(f"Running {len(samples)} benign external BIPIA samples...\n")
 
     results = []
@@ -97,7 +101,7 @@ def run():
     print(f"  [{total}/{total}] done                    \n")
 
     # ------------ save detailed results ------------
-    with open(RESULTS_CSV_PATH, "w", newline="", encoding="utf-8") as f:
+    with open(results_csv_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=list(results[0].keys()))
         writer.writeheader()
         writer.writerows(results)
@@ -124,6 +128,7 @@ def run():
         print(f"  {t:15s} {rate:5.1f}%  ({stats['false_positives']}/{stats['total']})")
 
     summary = {
+        "model": selected_model,
         "n_samples": n,
         "false_positive_rate_pct": round(fpr, 2),
         "false_positive_count": total_false_positives,
@@ -134,18 +139,18 @@ def run():
             for t, s in type_stats.items()
         },
         "internal_baseline_for_comparison": {
-            "FPR_pct": 0.0, "n_legitimate": 333
+            "note": "see benign_fpr_diagnosis__<model>.csv for this model's own internal FPR run",
         },
     }
-    with open(SUMMARY_JSON_PATH, "w", encoding="utf-8") as f:
+    with open(summary_json_path, "w", encoding="utf-8") as f:
         json.dump(summary, f, ensure_ascii=False, indent=2)
 
-    print(f"\nFull details:  {RESULTS_CSV_PATH}")
-    print(f"Summary JSON:  {SUMMARY_JSON_PATH}")
-    print(f"\nTable ready for the paper (External Validation section):")
-    print(f"  | Dataset                     | FPR    | n     |")
-    print(f"  | Internal (self-generated)   | 0.00%  | 333   |")
-    print(f"  | BIPIA external (Microsoft)  | {fpr:.2f}%  | {n}   |")
+    print(f"\nFull details:  {results_csv_path}")
+    print(f"Summary JSON:  {summary_json_path}")
+    print(f"\nTable ready for the paper (External Validation section, model={selected_model}):")
+    print(f"  | Dataset                     | FPR            | n     |")
+    print(f"  | Internal (self-generated)   | see diagnosis  | 333   |")
+    print(f"  | BIPIA external (Microsoft)  | {fpr:.2f}%         | {n}   |")
 
 
 if __name__ == "__main__":
