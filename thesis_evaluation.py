@@ -612,6 +612,25 @@ def main():
         'raw_runs': runs,
     }
 
+    # Save the COMPLETE Part 1 summary (including per_cat_avg) to disk now,
+    # before Part 2/3 even start. FIXED: previously the only on-disk output
+    # was the final json.dump() at the very end of the script, after Part 1
+    # + Part 2 (ablation) + Part 3 + plotting all finished -- if the process
+    # was interrupted anywhere in Part 2/3 (crash, closed terminal, machine
+    # slept), the complete, valid, hours-in-the-making Part 1 result
+    # (per-category breakdown included) was lost with nothing recoverable
+    # from disk. This happened in practice. Now it's safe the moment Part 1
+    # finishes, independent of whatever happens next.
+    with open(PROGRESS_JSON, 'w', encoding='utf-8') as f:
+        json.dump({
+            'model': SELECTED_MODEL,
+            'runs_completed': N_RUNS,
+            'runs_total': N_RUNS,
+            'part1_complete': True,
+            'full_evaluation': full_summary,
+            'ablation_study': {},  # filled in incrementally below as Part 2 runs
+        }, f, indent=2, ensure_ascii=False, default=str)
+
     print(f"\n{SEP}")
     print(f"  ASR      : {mean_asr:.2f}% ± {std_asr:.2f}%")
     print(f"  FPR      : {mean_fpr:.2f}% ± {std_fpr:.2f}%")
@@ -645,6 +664,20 @@ def main():
         }
         print(f"  → ASR={res['ASR']}%  FPR={res['FPR']}%  "
               f"Lat={res['latency']}s")
+
+        # Same crash-safety as Part 1: persist each ablation config's
+        # result to disk the moment it finishes, not just at the very end.
+        with open(PROGRESS_JSON, 'w', encoding='utf-8') as f:
+            json.dump({
+                'model': SELECTED_MODEL,
+                'runs_completed': N_RUNS,
+                'runs_total': N_RUNS,
+                'part1_complete': True,
+                'full_evaluation': full_summary,
+                'ablation_study': dict(ablation),
+                'ablation_configs_done': list(ablation.keys()),
+                'ablation_configs_total': [c[0] for c in configs],
+            }, f, indent=2, ensure_ascii=False, default=str)
 
     # Full of the original result
     ablation['Full (L0-L4)'] = {
