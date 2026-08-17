@@ -37,10 +37,18 @@ CRITICAL_INJECTION_PATTERNS = [
     r"what\s+(is|are)\s+your\s+(system\s+prompt|instructions?|guidelines?)",
 
     # (Template Injection)
-    r"\{\{.*?\}\}",          # Jinja2-style
-    r"\$\{.*?\}",             # Shell/JS-style
-    r"<%.*?%>",               # ASP/JSP-style
-    r"<\?.*?\?>",             # PHP-style
+    # FIXED: bare "{{ x }}" / "${x}" / "<% x %>" / "<? x ?>" blocked ANY
+    # legitimate question about templating/scripting syntax (e.g. "explain
+    # Jinja2's {{ variable }} syntax", "what does ${VAR} mean in bash?").
+    # Now requires the content inside the delimiters to actually reference
+    # something a real template-injection payload would target -- the
+    # same context-required methodology used everywhere else. A harmless
+    # example variable name no longer matches; an attempt to reach the
+    # system prompt / config / exec an eval still does.
+    r"\{\{.*?(system|prompt|instruction|config|env|secret|exec|eval|admin|override|ignore).*?\}\}",  # Jinja2-style
+    r"\$\{.*?(system|prompt|instruction|config|env|secret|exec|eval|admin|override|ignore|jndi).*?\}",  # Shell/JS-style
+    r"<%.*?(system|prompt|instruction|config|env|secret|exec|eval|admin|override|ignore).*?%>",  # ASP/JSP-style
+    r"<\?.*?(system|prompt|instruction|config|env|secret|exec|eval|admin|override|ignore).*?\?>",  # PHP-style
 
     # Attempts to break Mistral's mold
     r"\[/?INST\]",
@@ -145,8 +153,12 @@ def _remove_template_injections(text: str) -> str:
     text = re.sub(r'<</?SYS>>', '[FILTERED]', text, flags=re.IGNORECASE)
     text = re.sub(r'<s>\s*\[', '[', text, flags=re.IGNORECASE)
     # إزالة Template Injection العام
-    text = re.sub(r'\{\{.*?\}\}', '[FILTERED]', text, flags=re.DOTALL)
-    text = re.sub(r'\$\{.*?\}',   '[FILTERED]', text, flags=re.DOTALL)
+    # FIXED: same over-broad bare-syntax issue as CRITICAL_INJECTION_PATTERNS
+    # above -- only filter {{ }} / ${ } when the content inside actually
+    # references something a real injection payload would target.
+    _suspicious = r"(system|prompt|instruction|config|env|secret|exec|eval|admin|override|ignore|jndi)"
+    text = re.sub(r'\{\{.*?' + _suspicious + r'.*?\}\}', '[FILTERED]', text, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r'\$\{.*?' + _suspicious + r'.*?\}',   '[FILTERED]', text, flags=re.DOTALL | re.IGNORECASE)
     return text
 
 

@@ -197,7 +197,10 @@ class AblationRAG(SecureRAG):
             context  = self._get_rag_context(san)
             response = self.llm.generate_answer(san, context)
 
-            if self.l4 and risk in ['HIGH','MEDIUM'] and response:
+            # FIXED: matches src/pipeline.py -- L4 (when enabled via self.l4
+            # for this ablation config) no longer gated by risk level; see
+            # the FIXED comment in pipeline.py's run() for why.
+            if self.l4 and response:
                 susp, _ = semantic_response_is_suspicious(
                     response, self.retriever.get_embeddings(), self.embedder)
                 if susp:

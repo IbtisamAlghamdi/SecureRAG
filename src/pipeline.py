@@ -192,8 +192,22 @@ SecureRAG Framework — A five-layer defense built on System Boundaries    """
             # ── L4: Output Guardrailing (Semantic Boundary Check) ─────────────
             # Checks if the response "exceeds the semantic boundaries" of the knowledge base
 
-            # Only works on high-risk queries to avoid false positives
-            if risk_level in ["HIGH", "MEDIUM"] and response:
+            # FIXED: L4 used to run only when L0 classified the query as
+            # HIGH/MEDIUM risk. Verified by direct code comparison (see
+            # commit history) that this gate lets attacks L0 doesn't flag
+            # (previously ~19/999 in a sampled batch) reach the model with
+            # ZERO further checking -- L4 never even looks at the
+            # response. L4 itself is cheap (one embedding + cosine
+            # similarity + a few regex checks -- not a second model call),
+            # so gating it behind a classifier that can be wrong costs
+            # detection coverage for near-zero latency benefit. Now runs
+            # on every response regardless of L0's risk classification.
+            # NOTE: this specific change (unlike the L0/L1/L2 fixes) could
+            # only be verified with the real LLM's output text, which
+            # requires the model -- re-run the FPR check
+            # (diagnose_fpr.py) after pulling this to confirm it doesn't
+            # introduce new false positives on legitimate responses.
+            if response:
                 suspicious, sim_score = semantic_response_is_suspicious(
                     response, self.retriever.get_embeddings(), self.embedder
                 )
