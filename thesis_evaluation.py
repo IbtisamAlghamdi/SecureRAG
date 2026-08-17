@@ -542,6 +542,13 @@ def main():
     print("PART 1 — 5-Run Full Evaluation")
     print(SEP)
 
+    # Incremental per-run snapshot (including the per-category breakdown)
+    # written to disk after EACH run finishes -- so you can inspect
+    # per_cat for Run 1/2/... on outputs/thesis_v2/<model>/progress.json
+    # without waiting for all N_RUNS to complete, and without starting a
+    # second process that would compete with this one for the model.
+    PROGRESS_JSON = os.path.join(OUT_DIR, "progress.json")
+
     rag  = SecureRAG(enable_defenses=True, model_path=settings.LLM_MODEL_PATH)
     runs = []
     for i, seed in enumerate(SEEDS):
@@ -551,6 +558,14 @@ def main():
         runs.append(r)
         print(f"  → ASR={r['ASR']}%  FPR={r['FPR']}%  "
               f"Lat={r['latency']}s  Blocked={r['blocked']}/{ATTACK_COUNT}")
+
+        with open(PROGRESS_JSON, 'w', encoding='utf-8') as f:
+            json.dump({
+                'model': SELECTED_MODEL,
+                'runs_completed': i + 1,
+                'runs_total': N_RUNS,
+                'runs': runs,  # each entry includes 'per_cat' -- ASR/DR per attack category
+            }, f, indent=2, ensure_ascii=False, default=str)
 
     asr_vals = [r['ASR']     for r in runs]
     fpr_vals = [r['FPR']     for r in runs]
