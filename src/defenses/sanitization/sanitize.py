@@ -23,8 +23,13 @@ CRITICAL_INJECTION_PATTERNS = [
     r"forget\s+(all\s+)?(your\s+)?instructions?",
     r"disregard\s+(all\s+)?instructions?",
     r"bypass\s+(security|filter|safety|restriction)",
-    r"override\s+(all\s+)?(safety|security|instructions?)?",
-    r"jailbreak",
+        # FIXED: suffix made mandatory (was optional via trailing "?",
+    # so it matched the bare word "override" alone with zero context).
+    r"override\s+(all\s+)?(safety|security|instructions?)",
+        # FIXED: require an activation/imperative context, so academic or
+    # research discussion of the term ("jailbreak techniques") no longer
+    # matches -- only command-form usage does.
+    r"(enable|activate|perform|initiate|start)\s+.{0,15}jailbreak|jailbreak\s+(this|yourself|mode|now)",
 
     # Attempts to extract System Prompt
     r"reveal\s+(the\s+)?(system\s+prompt|your\s+instructions?)",
@@ -166,6 +171,11 @@ def sanitize_input(text: str) -> str:
     if was_base64:
       # Unpacked content requires additional sterilization
         text = f"[BASE64_DECODED] {text}"
+
+    # ── Step 3.5 (ADDED): Strip HTML comments used to split dangerous
+    # words apart ("IGNORE<!-- -->ALL<!-- -->INSTRUCTIONS") so the words
+    # rejoin and downstream pattern matching sees them as intended.
+    text = re.sub(r'<!--.*?-->', '', text, flags=re.DOTALL)
 
     # ── Step 4: Remove Template Injection (Essential Channel Separation) ────
     text = _remove_template_injections(text)

@@ -17,14 +17,19 @@ from typing import Tuple, List
 
 # ── Pattern 1: Direct Boundary Violations ─────────────────────────────────────
 DIRECT_PATTERNS = [
-    r"ignore\s+(all\s+)?(previous\s+|prior\s+|your\s+)?instructions?",
-    r"forget\s+(all\s+)?(your\s+)?(previous\s+|prior\s+)?instructions?",
-    r"disregard\s+(all\s+)?(previous\s+)?instructions?",
+    r"ignore\s+(all\s+)?(previous\s+|prior\s+|your\s+)?(instructions?|guidelines?|rules?|policies|restrictions?|safety\s+measures?)",
+    r"forget\s+(all\s+)?(your\s+)?(previous\s+|prior\s+)?(instructions?|guidelines?|rules?)",
+    r"disregard\s+(all\s+)?(previous\s+)?(instructions?|guidelines?|rules?)",
+    r"ignored\s+(your\s+)?(guidelines?|instructions?|rules?|restrictions?)",
     r"override\s+(all\s+)?(safety|security|guidelines?|restrictions?)",
     r"bypass\s+(the\s+)?(security|filter|safety|restriction|guideline)",
-    r"jailbreak",
-    r"developer\s+mode",
-    r"god\s+mode",
+    # FIXED: same over-broad bare-word issue as L1 -- require an
+    # activation/imperative context so research/academic mentions pass.
+    r"(enable|activate|perform|initiate|start)\s+.{0,15}jailbreak|jailbreak\s+(this|yourself|mode|now)",
+    # FIXED: require an activation imperative, so genuine tech-support
+    # questions ("what is developer mode in Chrome?") no longer match --
+    # only the jailbreak-style command form does.
+    r"(enable|activate|turn\s+on|switch\s+to|enter|unlock)\s+(developer|god)\s+mode",
     r"dan\s+mode",
     r"unrestricted\s+mode",
     r"no\s+restrictions?\s+apply",
@@ -44,16 +49,16 @@ DIRECT_PATTERNS = [
     r"s[\-\s\.]+y[\-\s\.]+s[\-\s\.]+t[\-\s\.]+e[\-\s\.]+m",
     r"p[\-\s\.]+r[\-\s\.]+o[\-\s\.]+m[\-\s\.]+p[\-\s\.]+t",
     # ── Token Smuggling: Fullwidth Unicode ────────────────────────────────────
-    r"[ｉіi][ｇg][ｎn][ｏo][ｒr][ｅe]",
-    r"[ｂb][ｙy][ｐp][ａa][ｓs]{2}",
-    r"[ｒr][ｅe][ｖv][ｅe][ａa][ｌl]",
-    r"[ｏo][ｖv][ｅe][ｒr][ｒr][ｉi][ｄd][ｅe]",
+    r"[ｉі][ｇ][ｎ][ｏ][ｒ][ｅ]",
+    r"[ｂ][ｙ][ｐ][ａ][ｓ]{2}",
+    r"[ｒ][ｅ][ｖ][ｅ][ａ][ｌ]",
+    r"[ｏ][ｖ][ｅ][ｒ][ｒ][ｉ][ｄ][ｅ]",
     # ── Token Smuggling: Leetspeak ────────────────────────────────────────────
     r"1gn[0o]r[3e]",
-    r"[b6]yp[4a]ss",
-    r"[0o]v[3e]rr[1i]d[3e]",
-    r"r[3e]v[3e][4a]l",
-    r"[5s]y[5s]t[3e]m\s+pr[0o]mpt",
+    r"[6]yp[4]ss",
+    r"[0]v[3]rr[1]d[3]",
+    r"r[3]v[3][4]l",
+    r"[5]y[5]t[3]m\s+pr[0]mpt",
     r"1n[5s]truct[1i][0o]n[5s]",
     r"pr[3e]v[1i][0o]u[5s]\s+1n[5s]truct[1i][0o]n[5s]",
     # ── Conversational Drift: Praise + Extract ────────────────────────────────
@@ -67,10 +72,10 @@ DIRECT_PATTERNS = [
     r"(maintain|keep)\s+(the\s+same\s+)?(tone|style|format).{0,60}without\s+(any\s+)?(safety|restriction|filter|limit)",
     r"(you\s+explained|you\s+described).{0,40}(share|tell\s+me|reveal).{0,40}(rules?|guidelines?|operate\s+under|instructions?)",
     # ── Improving homoglyphs (similar letters) ─ ──────────────────────────────────
-    r"[іíìîïi][ｇg][ｎn][ｏo][ｒr][ｅe]",  # Wider coverage of the manipulated letter i
-    r"[ｂb][ｙy][ｐp][ａa][ｓs]{2}",
+    r"[іíìîï][ｇ][ｎ][ｏ][ｒ][ｅ]",  # Wider coverage of the manipulated letter i (ASCII i removed - was over-matching)
+    r"[ｂ][ｙ][ｐ][ａ][ｓ]{2}",
     r"p\.r\.o\.m\.p\.t", # Dots between the letters
-    r"i\s*g\s*n\s*o\s*r\s*e", # random distances
+    r"i\s+g\s+n\s+o\s+r\s+e", # random distances (requires REAL spacing now)
 
 # Base64 Attempt Detection (Common Patterns)─
 r"(?:[A-Za-z0-9+/]{4}){10,}", # Revealing long texts that look like Base64
@@ -81,7 +86,7 @@ r"decode\s+(this|the|following)", # Decryption commands revealed
 
 # ── Pattern 2: System Prompt Extraction ───────────────────────────────────────
 EXTRACTION_PATTERNS = [
-    r"(reveal|show|print|output|display|repeat|tell\s+me|share)\s+(the\s+)?(system\s+prompt|initial\s+prompt|base\s+prompt|your\s+instructions?|initialization)",
+    r"(reveal|show|print|output|display|repeat|tell\s+me|share)\s+(the\s+|its\s+|your\s+|all\s+|any\s+)?(system\s+prompt|initial\s+prompt|base\s+prompt|(system\s+)?instructions?|initialization|(system\s+)?configuration|full\s+system)",
     r"what\s+(are\s+)?(your|the)\s+(system\s+)?(instructions?|prompt|rules?|guidelines?|configuration)",
     r"(first|original|initial|hidden|secret)\s+\d*\s*(tokens?|words?|characters?)\s+(of\s+)?(your|the)\s+(instructions?|prompt)",
     r"\[\[?INST\]\]?|<<SYS>>|<</SYS>>",
@@ -110,7 +115,11 @@ AUTHORITY_PATTERNS = [
     r"i\s+(am|'m)\s+(a\s+)?(researcher\s+at|developer\s+at|engineer\s+at|from)\s+(anthropic|openai|meta|google|your\s+creator)",
     r"(mandatory|required|authorized)\s+(compliance|security|audit|check|override)",
     r"(system|security)\s+(integrity|breach|alert|warning)\s+(check|detected|required)",
-    r"(your\s+)?(developer|creator|provider|admin|administrator)\s+(is\s+here|speaking|override|compliance)",
+        # FIXED: excluded "override" when followed by "feature/function/
+    # setting/capability" -- a strong signal this is a product
+    # description ("an admin override feature") rather than an
+    # impersonation claim ("your admin is speaking, override...").
+    r"(your\s+)?(developer|creator|provider|admin|administrator)\s+(is\s+here|speaking|override(?!\s+(feature|function|setting|capability|option))|compliance)",
     r"(red\s+team|pen\s+test|penetration\s+test)\s+(authorized|approved|official|legitimate)",
     r"(license|access|service)\s+will\s+be\s+(revoked|suspended|terminated)\s+unless",
     r"(evaluation|test)\s+mode\s*(activated|enabled|on)",
@@ -123,7 +132,7 @@ NESTED_PATTERNS = [
     r"\[.{0,50}(ignore|bypass|override|reveal|forget|unrestricted).{0,50}\]",
     r"\{.{0,50}(ignore|bypass|override|system|safety|filter).{0,50}\}",
     r"<!--.{0,100}(ignore|bypass|override|reveal|instruction).{0,100}-->",
-    r"\bNOTE\s+(TO|FOR)\s+AI\s*[:;].{0,100}(ignore|bypass|reveal|override)",
+    r"\bNOTE\s+(TO|FOR)\s+AI\s*[:;].{0,100}(ignore|bypass|reveal|override|disregard|forget)",
     r"\bAI\s+(INSTRUCTION|DIRECTIVE|COMMAND|NOTE)\s*[:;].{0,100}",
     r"\bSYSTEM[_\s]OVERRIDE\s*[=:]\s*(true|1|yes|enabled)",
     r"\bHIDDEN\s+INSTRUCTION\s*[:;]",
@@ -147,6 +156,14 @@ NESTED_PATTERNS = [
 # ── Pattern 6: Context Poisoning Signals ──────────────────────────────────────
 POISONING_PATTERNS = [
     r"(according\s+to|based\s+on)\s+the\s+(retrieved|document|corpus|knowledge\s+base).{0,80}(ignore|bypass|unrestricted|override|authorized|exempt)",
+    # ADDED: covers the flexible word order "according to the <source> you
+    # retrieved ... disabled/exempt for <role>" that the pattern above
+    # (which requires the trust-noun immediately after "the") does not
+    # match. Requires BOTH a retrieval-citation phrase AND a nearby
+    # exemption/disablement claim, so plain mentions of either alone do
+    # not trigger it.
+    r"(according\s+to|based\s+on|per)\s+the\s+.{0,40}(retriev|document|corpus|knowledge\s+base|paper|article).{0,60}(disabled|exempt|not\s+enforced|do\s+not\s+apply|suspended|not\s+apply)",
+    r"(disabled|exempt|not\s+enforced|do\s+not\s+apply|suspended)\s+for\s+.{0,40}(according\s+to|based\s+on|per)\s+the\s+.{0,40}(retriev|document|corpus|knowledge\s+base|paper|article)",
     r"(retrieved|document|corpus)\s+(says?|states?|notes?|indicates?).{0,80}(safety\s+filter|guidelines?\s+are\s+optional|exempt|override)",
     r"(authorize[sd]?|exempt(ed)?|approved)\s+(this\s+)?(request|query|user|access)\s+(based\s+on|per|according\s+to)",
     r"(context\s+score|similarity\s+score|confidence)\s*(>|greater|above)\s*[\d.]+\s*(enable|activate|switch|proceed\s+without)",
@@ -179,7 +196,13 @@ TRUST_ESCALATION_PATTERNS = [
 
 # ── Pattern 8: Indirect Authorization / Poisoned Claims ───────────────────────
 AUTHORIZATION_CLAIMS = [
-    r"(i\s+(am|'m)\s+an?\s+)?(admin|administrator|developer|researcher|authorized\s+user|level\s+\d)",
+    # FIXED: prefix made mandatory (was optional before, so it matched the
+    # bare word "admin"/"developer"/"researcher" anywhere with zero context).
+    # Allows "a/an/the" as article, and up to two filler words (e.g. "the
+    # system administrator", "an authorized researcher") between the claim
+    # verb and the role noun, so real impersonation phrasing is still caught.
+    r"i\s+(am|'m)\s+(the\s+|a\s+|an\s+)?(\w+\s+){0,2}(admin|administrator|developer|researcher|authorized\s+user)",
+    r"level\s+\d+\s+(clearance|access|authorization)",
     r"(clearance|security)\s+level\s+\d",
     r"(exempt(ed)?|authorized|approved|granted\s+access)\s+(from|for|to)\s+(content|safety|filter|policy|restriction)",
     r"(special|elevated|admin|root)\s+(access|privileges?|permission|rights?)",
@@ -198,6 +221,39 @@ ALL_TIERS = [
     ("trust_escalation",       TRUST_ESCALATION_PATTERNS,  "MEDIUM"),
     ("indirect_authorization", AUTHORIZATION_CLAIMS,       "MEDIUM"),
 ]
+
+# ── L0 Fast Pre-Screen ─────────────────────────────────────────────────────
+# FIXED (L0 bug): pipeline.py's L0 pre-screen used to carry its own,
+# separate list of BARE keywords ("ignore", "system prompt", "bypass",
+# "override", "reveal", "developer mode", ...) matched with plain substring
+# containment. That is the exact class of bug already fixed here for L1/L2:
+# a bare word fires on any sentence that merely contains it, regardless of
+# context. Confirmed false positives it caused:
+#   "Can you explain system prompts in simple terms?"            -> "system prompt"
+#   "What does 'developer mode' mean in Chrome's extension...?"  -> "developer mode"
+#   "How do I override a method in a Python subclass?"           -> "override"
+#   "How can I reveal hidden files in a Unix-based file system?" -> "reveal"
+#   "What is the purpose of an admin override feature...?"       -> "override"
+#   "How can I ignore specific files using a .gitignore ...?"    -> "ignore"
+#
+# Root-cause fix: L0 must not maintain its own duplicate, unvalidated
+# keyword list. It reuses the SAME context-required HIGH-risk regex tiers
+# already validated above (imperative/verb + target, not a bare topic
+# word), compiled once here for speed, and imported by pipeline.py instead
+# of re-implementing detection.
+HIGH_RISK_TIERS = (DIRECT_PATTERNS + EXTRACTION_PATTERNS + ROLE_PATTERNS
+                    + AUTHORITY_PATTERNS + NESTED_PATTERNS)
+_HIGH_RISK_COMPILED = [re.compile(p, flags=re.IGNORECASE | re.DOTALL) for p in HIGH_RISK_TIERS]
+
+
+def quick_high_risk_scan(text: str) -> bool:
+    """Fast L0 pre-screen. True only if `text` matches one of the
+    validated, context-aware HIGH-risk patterns above -- NOT a bare
+    keyword substring check. See the comment block above for the false
+    positives this replaces."""
+    lowered = text.lower()
+    return any(p.search(lowered) for p in _HIGH_RISK_COMPILED)
+
 
 #This function is not used directly in pipeline.py, but it might be useful.
 def rule_based_detector(text: str) -> bool:

@@ -74,7 +74,11 @@ def generate_dataset(seed: int):
     gen     = RealisticAttackGenerator()
     attacks = gen.generate_batch(ATTACK_COUNT, benign_ratio=0.0)
     attacks = [a for a in attacks if a.get('is_attack', True)][:ATTACK_COUNT]
-    benign  = random.choices(gen.benign_queries, k=BENIGN_COUNT)
+    # FIXED: was random.choices(gen.benign_queries, k=BENIGN_COUNT) -- sampled
+    # a static list WITH replacement, so duplicate benign queries could (and
+    # did) land in the same run. generate_benign_batch() builds BENIGN_COUNT
+    # dynamically from template x topic pools with zero duplicates.
+    benign  = gen.generate_benign_batch(BENIGN_COUNT)
     return attacks, benign
 
 

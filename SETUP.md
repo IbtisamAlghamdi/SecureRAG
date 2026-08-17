@@ -71,6 +71,31 @@ python3 thesis_evaluation.py
 python3 generate_charts.py
 ```
 
+### 9. (No model needed) Verify the L0 fix + the dynamic benign generator
+
+Pure Python/regex checks that run in seconds, without loading the LLM,
+embedder, or FAISS -- covers everything up to L3. Run this any time after
+pulling changes, before spending hours on a full model run:
+
+```bash
+python3 verify_no_model.py
+```
+
+### 10. Diagnose false positives after a run
+
+```bash
+python3 diagnose_fpr.py
+```
+
+### 11. External validation (BIPIA, independent of this repo's own generator)
+
+```bash
+python3 build_eval_set.py        # needs BIPIA raw data under data/ (see script docstring)
+python3 run_external_eval.py     # attack-side external ASR
+python3 run_external_fpr_eval.py # benign-side external FPR (uses fpr_set.json)
+python3 compare_chart.py         # internal vs external bar chart
+```
+
 ---
 
 ## Project Structure
@@ -81,6 +106,12 @@ SecureRAG_Fixed/
 ├── generate_charts.py             <- Generate thesis charts
 ├── download_datasets.py          <- Download BEIR/NQ datasets
 ├── download_models.py            <- Download model files
+├── verify_no_model.py            <- L0/L1/L2/L3 regression check, no model needed
+├── diagnose_fpr.py                <- Per-query FPR breakdown after a run
+├── build_eval_set.py              <- Build external BIPIA attack eval set
+├── run_external_eval.py           <- Run external BIPIA attack eval (ASR)
+├── run_external_fpr_eval.py       <- Run external BIPIA benign eval (FPR)
+├── compare_chart.py               <- Internal vs external bar chart
 ├── SETUP.md                       <- This file
 │
 ├── data/
@@ -166,16 +197,16 @@ SecureRAG_Fixed/
 
 ## Evaluation Results
 
-| Metric | Baseline | SecureRAG |
-|--------|----------|-----------|
-| Attack Success Rate | 100.0% | 8.96% (±0.59%) |
-| False Positive Rate | 0.0% | 0.00% (±0.00%) |
-| Mean Latency | 19.70 s | 6.09 s (±0.13 s) |
-| Latency Reduction | — | 69.1% |
+**Read this table historically, in order -- each row superseded the one
+above it as bugs were found and fixed. Do not cite the top rows.**
 
-Results are the mean of 5 independent runs
-(seeds: 42, 137, 271, 413, 509).
-1,001 attack queries across 8 categories + 333 legitimate queries = 1,334 total.
+| Version | ASR | FPR | Mean Latency | Note |
+|---|---|---|---|---|
+| Original (superseded) | 8.96% (±0.59%) | 0.00% (±0.00%) | 6.09 s (±0.13 s) | FPR measured on only 12 unique benign questions, oversampled with replacement to reach 333 -- an artificially perfect number, not a valid measurement. |
+| First correction (superseded) | 8.90% (±0.52%) | 1.50% (±0.56%) | 7.905 s (±2.305 s) | Benign set expanded to 333 genuinely distinct hand-written questions (no duplicates). χ²=909.0, p<0.001 (McNemar), Wilson 95% CI [1.02%, 4.27%]. Root cause of all 6 false positives traced to a bare-keyword list in `pipeline.py`'s L0 pre-screen. |
+| **Current code (this commit) -- not yet re-run** | pending | pending | pending | L0 fixed: reuses the same context-required regex tiers as L2 instead of bare-keyword substring matching (see `src/defenses/rules/rule_filter.py::quick_high_risk_scan`). Benign queries are now generated dynamically at request time from independent template x topic pools (`BenignQueryGenerator`) instead of sampled from any static list -- draws are always duplicate-free. Run `python3 verify_no_model.py` for an instant, model-free sanity check, then `python3 thesis_evaluation.py` (5 seeds: 42, 137, 271, 413, 509) for the real numbers. |
+
+1,001 attack queries across 8 categories + 333 legitimate queries = 1,334 total per run.
 
 ---
 

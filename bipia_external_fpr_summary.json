@@ -1,0 +1,20 @@
+{
+  "n_samples": 333,
+  "false_positive_rate_pct": 69.37,
+  "false_positive_count": 231,
+  "avg_latency_sec": 12.701,
+  "layer_distribution": {
+    "semantic": 134,
+    "anomaly": 95,
+    "NONE (passed correctly)": 102,
+    "rules": 2
+  },
+  "fpr_by_source_type": {
+    "email": 64.0,
+    "table": 71.7
+  },
+  "internal_baseline_for_comparison": {
+    "FPR_pct": 0.0,
+    "n_legitimate": 333
+  }
+}
