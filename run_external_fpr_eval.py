@@ -14,6 +14,11 @@ Usage:
     conda activate RAG
     python3 run_external_fpr_eval.py --model Mistral-7B
     (omit --model to be prompted interactively)
+
+    # Fast diagnostic on a subset instead of all 333 (e.g. while chasing
+    # down a specific false-positive mechanism): --limit N takes the
+    # first N samples, --source-type email|table filters by document type.
+    python3 run_external_fpr_eval.py --model Mistral-7B --limit 40 --source-type email
 """
 
 import argparse
@@ -46,13 +51,23 @@ def load_fpr_set():
 def run():
     parser = argparse.ArgumentParser(description=__doc__)
     add_model_arg(parser)
+    parser.add_argument("--limit", type=int, default=None,
+                         help="Only run the first N samples (fast diagnostic subset).")
+    parser.add_argument("--source-type", choices=["email", "table"], default=None,
+                         help="Only run samples of this document type.")
     args = parser.parse_args()
     selected_model = resolve_model(args.model)
     suffix = safe_filename(selected_model)
+    if args.limit or args.source_type:
+        suffix += f"__subset_{args.source_type or 'all'}{args.limit or ''}"
     results_csv_path = SCRIPT_DIR / f"bipia_external_fpr_results__{suffix}.csv"
     summary_json_path = SCRIPT_DIR / f"bipia_external_fpr_summary__{suffix}.json"
 
     samples = load_fpr_set()
+    if args.source_type:
+        samples = [s for s in samples if s["source_type"] == args.source_type]
+    if args.limit:
+        samples = samples[:args.limit]
     print(f"Loading SecureRAG ({selected_model})...")
     rag = SecureRAG(enable_defenses=True, model_path=settings.LLM_MODEL_PATH)
     print(f"Running {len(samples)} benign external BIPIA samples...\n")
@@ -77,6 +92,16 @@ def run():
 
         elapsed = res.get("latency", 0.0)
 
+        # DIAGNOSTIC (added after the semantic-layer FPR spike): for L4
+        # blocks specifically, semantic_response_is_suspicious() returns
+        # similarity_score == 0.0 exactly when a bare OUTPUT_DANGER_PATTERNS
+        # regex matched, or a real cosine value (< SEMANTIC_THRESHOLD) when
+        # it was the corpus-similarity check instead. Logging it (plus a
+        # response snippet) tells us which mechanism is actually
+        # responsible instead of guessing.
+        sim_score = res.get("similarity_score", None)
+        response_snippet = (res.get("response") or "")[:200]
+
         results.append({
             "id": sample["id"],
             "source_type": sample["source_type"],
@@ -84,7 +109,10 @@ def run():
             "flag": res.get("flag", ""),
             "blocking_layer": layer,
             "risk_level": res.get("risk", ""),
+            "anomaly_score": res.get("anomaly_score", ""),
+            "similarity_score": sim_score,
             "latency_sec": elapsed,
+            "response_snippet": response_snippet,
         })
 
         layer_counts[layer] += 1
