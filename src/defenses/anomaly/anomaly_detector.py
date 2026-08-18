@@ -128,13 +128,29 @@ def compute_anomaly_score(text: str) -> float:
     text_lower = text.lower()
 
     # Dimension 1: Length and Complexity─────────────────────────────────────────────
+    # FIXED: found via the BIPIA external FPR run (68.47%, 228/333 false
+    # positives) -- confirmed by direct measurement that 211/333 (63%) of
+    # those benign documents are long (>800 chars) with ZERO suspicious
+    # keywords anywhere, and the "sentences * 1.2" bonus was UNBOUNDED: a
+    # genuine 90-sentence business email/table scored +108 from sentence
+    # count alone. A long, many-sentence document (an email, a table, a
+    # quoted report -- exactly what a RAG "query" legitimately contains
+    # when it embeds retrieved/pasted content) is not inherently
+    # suspicious; length is a weak, contextual signal like the generic
+    # keywords fixed earlier, not a strong one. Root-cause fix: cap this
+    # dimension's total contribution so length/sentence-count ALONE (with
+    # no other signal) can push a query to MEDIUM risk (opens the cheap L4
+    # check) but not past the LOW-risk hard-block threshold. Verified
+    # directly against the real BIPIA benign set after this fix (see
+    # commit message) and against the attack generator's own long/staged
+    # payloads to confirm detection isn't weakened.
     length = len(text)
-    if length > 800:   score += 18.0
-    elif length > 400: score +=  9.0
-    elif length > 200: score +=  3.0
+    length_score = 18.0 if length > 800 else 9.0 if length > 400 else 3.0 if length > 200 else 0.0
 
     sentences = len(re.findall(r'[.!?]+', text))
-    if sentences > 6:  score += sentences * 1.2
+    sentence_score = min(sentences * 1.2, 12.0) if sentences > 6 else 0.0
+
+    score += min(length_score + sentence_score, 20.0)
 
     # ─ Dimension 2: Risk Density ──────────────────────────────────────────────────
     risk_density      = 0.0
