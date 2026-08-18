@@ -497,30 +497,34 @@ f"\\quad p {pval}",
     return "\n".join(lines)
 
 
-# SC Examples من JSON القديم
+# SC Examples
 
-def load_sc_examples():
+def load_sc_examples(runs=None):
+    """
+    FIXED: this used to read from outputs/evaluation_report.json (a
+    leftover file from an unrelated, much older single-run script) --
+    meaning the "representative bypass examples" printed and written to
+    the paper could be completely disconnected from the actual run that
+    just finished. sc_fail (real semantic-camouflage bypasses from THIS
+    run) is already computed by evaluate() and available on `runs`; use
+    that directly instead of reading a stale file. Falls back to the
+    static generator list only if no run data is available at all (e.g.
+    called standalone).
+    """
     examples = []
-    for json_path in ["outputs/evaluation_report.json",
-                      "outputs/final_evaluation_results_1334.csv"]:
-        if not os.path.exists(json_path): continue
-        try:
-            if json_path.endswith('.json'):
-                with open(json_path) as f:
-                    data = json.load(f)
-                for item in data:
-                    if not isinstance(item, dict): continue
-                    if 'semantic' in item.get('type','').lower() and \
-                       not item.get('blocked', True):
-                        examples.append({
-                            'query': item.get('payload','')[:250],
-                            'type':  item.get('type',''),
-                            'risk':  item.get('risk','low'),
-                        })
-                    if len(examples) >= 5: break
-        except: pass
+    if runs:
+        seen = set()
+        for r in runs:
+            for ex in r.get('sc_fail', []):
+                if ex['query'] not in seen:
+                    seen.add(ex['query'])
+                    examples.append(ex)
+                if len(examples) >= 5:
+                    break
+            if len(examples) >= 5:
+                break
 
-    # fallback من المولّد
+    # fallback من المولّد -- بس لو ما فيه بيانات رن فعلية إطلاقًا
     if len(examples) < 3:
         gen = RealisticAttackGenerator()
         for q in gen.semantic_camouflage[:3]:
@@ -696,7 +700,7 @@ def main():
     print(f"\n{SEP}")
     print("PART 3 — Semantic Camouflage Examples")
     print(SEP)
-    sc_examples = load_sc_examples()
+    sc_examples = load_sc_examples(runs)
     for i, ex in enumerate(sc_examples):
         print(f"\n  Example {i+1}: {ex['query'][:100]}...")
 
