@@ -47,8 +47,9 @@ What this script checks, and why each check exists:
    Now requires the phrase to co-occur with an actual sensitive reference
    (system prompt, hidden instructions, restrictions). Verified real
    prompt-leak / jailbreak-compliance text is still caught. This matters
-   more now that L4 runs on every response (see pipeline.py), not just
-   HIGH/MEDIUM-risk ones.
+   more now that L4's gate is broader than plain HIGH/MEDIUM (see
+   pipeline.py: it also fires on LOW risk with a nonzero anomaly score,
+   staying risk-adaptive rather than running unconditionally).
 
 Usage:
     python3 verify_no_model.py
@@ -280,7 +281,7 @@ def check_l3_dense_benign():
 
 def check_l4_output_patterns():
     print(SEP)
-    print("7) L4 -- output-pattern false positives (runs on every response now)")
+    print("7) L4 -- output-pattern false positives (checked when risk-adaptive gate fires)")
     print(SEP)
     benign_responses = [
         "Sure, here is a summary of the document you asked about.",

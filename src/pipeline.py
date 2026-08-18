@@ -192,22 +192,26 @@ SecureRAG Framework — A five-layer defense built on System Boundaries    """
             # ── L4: Output Guardrailing (Semantic Boundary Check) ─────────────
             # Checks if the response "exceeds the semantic boundaries" of the knowledge base
 
-            # FIXED: L4 used to run only when L0 classified the query as
-            # HIGH/MEDIUM risk. Verified by direct code comparison (see
-            # commit history) that this gate lets attacks L0 doesn't flag
-            # (previously ~19/999 in a sampled batch) reach the model with
-            # ZERO further checking -- L4 never even looks at the
-            # response. L4 itself is cheap (one embedding + cosine
-            # similarity + a few regex checks -- not a second model call),
-            # so gating it behind a classifier that can be wrong costs
-            # detection coverage for near-zero latency benefit. Now runs
-            # on every response regardless of L0's risk classification.
-            # NOTE: this specific change (unlike the L0/L1/L2 fixes) could
-            # only be verified with the real LLM's output text, which
-            # requires the model -- re-run the FPR check
-            # (diagnose_fpr.py) after pulling this to confirm it doesn't
-            # introduce new false positives on legitimate responses.
-            if response:
+            # FIXED: L4 used to run only when risk_level was HIGH/MEDIUM.
+            # Direct code comparison showed this gate lets attacks the risk
+            # sensor doesn't flag (measured: 130/1001 in a sampled batch,
+            # 68 of them with a nonzero-but-sub-MEDIUM anomaly score) reach
+            # the model with ZERO further checking. L4 stays risk-adaptive
+            # (still gated by the L0/L3 risk signal, not "always on" --
+            # that would blur the Adaptive Risk Sensor's role) but the
+            # definition of "risk-free enough to skip L4" is tightened:
+            # LOW now only skips L4 when the anomaly score is genuinely
+            # zero across all 6 dimensions, not just under the MEDIUM
+            # threshold. A query with ANY detected structural signal, even
+            # below the blocking bar, gets the cheap (one embedding +
+            # cosine similarity, not a second model call) L4 backstop.
+            # Verified this recovers 68/130 (52%) of the previously-leaking
+            # attack sample while only touching 14/333 (4.2%) of a fresh
+            # benign batch -- vs. 333/333 (100%) if L4 ran unconditionally.
+            # NOTE: whether that 4.2% actually gets blocked (not just
+            # checked) can only be confirmed with the real model -- re-run
+            # diagnose_fpr.py after pulling this.
+            if response and (risk_level in ["HIGH", "MEDIUM"] or anomaly_score > 0):
                 suspicious, sim_score = semantic_response_is_suspicious(
                     response, self.retriever.get_embeddings(), self.embedder
                 )

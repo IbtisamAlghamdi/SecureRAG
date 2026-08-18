@@ -187,10 +187,14 @@ class AblationRAG(SecureRAG):
                 if det:
                     return self._block('rules', start, rr)
 
+            # Computed unconditionally (cheap) so both L3's gate and L4's
+            # gate below can use it regardless of which ablation config is
+            # active -- matches src/pipeline.py.
+            score = compute_anomaly_score(query)
+
             if self.l3:
-                score = compute_anomaly_score(query)
-                thr   = settings.get_anomaly_threshold()
-                eff   = thr * (0.7 if risk == 'HIGH' else 1.0)
+                thr = settings.get_anomaly_threshold()
+                eff = thr * (0.7 if risk == 'HIGH' else 1.0)
                 if score > eff * 2.0:
                     return self._block('anomaly', start, risk)
 
@@ -198,9 +202,11 @@ class AblationRAG(SecureRAG):
             response = self.llm.generate_answer(san, context)
 
             # FIXED: matches src/pipeline.py -- L4 (when enabled via self.l4
-            # for this ablation config) no longer gated by risk level; see
-            # the FIXED comment in pipeline.py's run() for why.
-            if self.l4 and response:
+            # for this ablation config) stays risk-adaptive, but "LOW" only
+            # skips it when the anomaly score is genuinely zero, not just
+            # under the MEDIUM threshold. See the FIXED comment in
+            # pipeline.py's run() for the full rationale and numbers.
+            if self.l4 and response and (risk in ["HIGH", "MEDIUM"] or score > 0):
                 susp, _ = semantic_response_is_suspicious(
                     response, self.retriever.get_embeddings(), self.embedder)
                 if susp:
