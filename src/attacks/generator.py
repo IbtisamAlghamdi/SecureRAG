@@ -227,7 +227,14 @@ documented in: BIPIA (Microsoft), SafeRAG (2025), USENIX Security 2024.
         - benign_ratio Natural questions to measure FPR
         """
         attacks = []
-        n_benign  = max(1, int(count * benign_ratio))
+        # FIXED: was max(1, int(count * benign_ratio)) -- forced at least 1
+        # benign item even when benign_ratio=0.0 (the exact call
+        # thesis_evaluation.py's generate_dataset() makes, then discards
+        # the 1 forced benign item via the is_attack filter). Net effect:
+        # a "1,001-attack" run only ever generated 999-1000 actual attacks.
+        # Doesn't affect any ASR/FPR math (which uses the real len()), but
+        # the advertised count should match what's actually tested.
+        n_benign  = int(count * benign_ratio)
         n_attacks = count - n_benign
 
         # Generating attacks
