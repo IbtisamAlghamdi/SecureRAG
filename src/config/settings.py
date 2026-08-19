@@ -43,7 +43,38 @@ REPETITION_PENALTY = 1.1
 # Threshold of Deviance — Calibration for New Realistic Attacks
 DEFENSE_MODE       = "balanced"
 ANOMALY_THRESHOLD  = 15.0
-SEMANTIC_THRESHOLD = 0.45
+# FIXED: found via the real BIPIA external FPR test (68.47% -> 70.87%,
+# 96.67% on emails specifically), root-caused with the actual similarity
+# scores logged per case (see run_external_fpr_eval.py's diagnostic
+# columns): all 29 sampled false positives scored 0.223-0.380 -- a real,
+# non-zero cosine similarity, nowhere near 0 (which would mean genuinely
+# fabricated/unrelated content). These were CORRECT answers grounded in
+# document content the query itself provided (e.g. a pasted email) -- not
+# hallucinations -- that simply don't resemble this corpus's own
+# Wikipedia/BEIR articles.
+#
+# 0.45 was inconsistent with a threshold already used elsewhere in this
+# same codebase for the exact same embedding space: pipeline.py's own
+# retrieval step (_get_rag_context) only requires similarity > 0.15 to
+# consider a corpus passage "relevant enough" to hand the model as
+# context in the first place. Demanding the model's ANSWER be MORE
+# similar to the corpus (0.45) than what even counts as relevant
+# retrieval (0.15) was never a deliberate design choice -- it was an
+# unvalidated default. Reusing the retrieval system's own existing bar
+# instead of inventing a new number.
+#
+# Trade-off, stated plainly: this makes L4's cosine-similarity check less
+# sensitive, which could weaken detection of the semantic_camouflage
+# attack category specifically (the framework's own weakest category,
+# ~41% ASR) if a manipulated response happens to still land above 0.15.
+# OUTPUT_DANGER_PATTERNS (semantic_detector.py) remains the primary,
+# already-validated defense against explicit prompt-leak/compliance
+# language and is unaffected by this change. This threshold change is
+# NOT yet validated against real attacks -- re-run run_external_eval.py
+# (external ASR, especially the semantic_camouflage-equivalent BIPIA
+# categories) alongside run_external_fpr_eval.py after this to see both
+# sides together, not just the FPR side.
+SEMANTIC_THRESHOLD = 0.15
 CRITERIA = {
     "CONTEXT_ADHERENCE":    True,
     "POLICY_COMPLIANCE":    True,
