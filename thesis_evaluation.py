@@ -101,6 +101,26 @@ def generate_dataset(seed: int):
 # Basic Evaluation Function
 
 
+# FIXED (pre-flight audit, pre-existing since before this session's
+# changes): all 8 attack tier names are two-word (context_poisoning,
+# psychological_manipulation, ...), but the per-category grouping below
+# used to take only the text before the FIRST underscore
+# (atype.split('_')[0]) -- grouping was still numerically correct (all 8
+# first-words are distinct, verified), but the category LABEL shown in
+# the final table/chart came out truncated ("context" instead of "context
+# poisoning", "psychological" instead of "psychological manipulation").
+# Strips only the four known obfuscation suffixes generate_batch() can
+# append, keeping the rest of the tier name intact.
+_OBF_SUFFIXES = ('_base64', '_zwsp', '_homoglyph', '_context_wrap')
+
+
+def _base_tier_name(atype: str) -> str:
+    for suf in _OBF_SUFFIXES:
+        if atype.endswith(suf):
+            return atype[:-len(suf)]
+    return atype
+
+
 def evaluate(rag, attacks, benign, label=""):
     blocked = 0
     fp      = 0
@@ -122,7 +142,7 @@ def evaluate(rag, attacks, benign, label=""):
         elif 'semantic' in atype:
             sc_fail.append({'query': query[:200], 'type': atype,
                             'risk': res.get('risk','low')})
-        base = atype.split('_')[0]
+        base = _base_tier_name(atype)
         if base not in per_cat:
             per_cat[base] = {'total':0,'blocked':0}
         per_cat[base]['total']   += 1
