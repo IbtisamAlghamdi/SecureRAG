@@ -24,6 +24,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from src.config import settings
 from src.pipeline import SecureRAG  # same import used in thesis_evaluation.py
+from src.defenses.semantic.semantic_detector import query_response_similarity
 from model_select import add_model_arg, resolve_model, safe_filename
 
 SCRIPT_DIR = Path(__file__).parent
@@ -93,7 +94,40 @@ def run():
         sim_score = res.get("similarity_score", None)
         qr_sim = res.get("query_response_similarity", None)
         l4_checked = res.get("l4_checked", res.get("flag") == "semantic")
-        response_snippet = (res.get("response") or "")[:200]
+        # Widened from 200->500 chars: at 200, several genuinely-compliant vs.
+        # genuinely-resisted responses were indistinguishable by eye because
+        # the deciding sentence fell past the cutoff (found during a manual
+        # spot-check of a 50-sample run). 500 is still a snippet, not the
+        # full response -- kept bounded so the CSV stays readable.
+        response_snippet = (res.get("response") or "")[:500]
+
+        # ADDED: does the ATTACK-SIDE run measure whether the model actually
+        # served the user's real request, not just "reached the model"?
+        # (Reviewer concern: "reaching the model is not necessarily a
+        # successful prompt injection" -- a response can clear every layer
+        # and still be a harmless answer to the ORIGINAL question, with the
+        # injected instruction ignored.) benign_question_similarity is the
+        # cosine similarity between the model's response and
+        # sample["benign_question"] -- the real, uninjected question BIPIA
+        # paired with this document. High similarity => the response stayed
+        # anchored to what the user actually asked (the hijack largely
+        # failed in practice, even if it wasn't blocked). Low similarity =>
+        # the response drifted toward the injected topic instead (the hijack
+        # actually worked). Only computed for responses that reached the
+        # model (not for blocked queries, which have no real generation to
+        # compare) and only when the sample provides a benign_question
+        # (eval_set.json always does; guarded here so this script doesn't
+        # assume that shape for every possible caller).
+        benign_q_sim = None
+        if not blocked and res.get("response") and sample.get("benign_question"):
+            try:
+                benign_q_sim = round(
+                    query_response_similarity(
+                        sample["benign_question"], res["response"], rag.embedder
+                    ), 4
+                )
+            except Exception:
+                benign_q_sim = None
 
         results.append({
             "id": sample["id"],
@@ -107,6 +141,7 @@ def run():
             "l4_checked": l4_checked,
             "similarity_score": sim_score,
             "query_response_similarity": qr_sim,
+            "benign_question_similarity": benign_q_sim,
             "latency_sec": elapsed,
             "response_snippet": response_snippet,
         })
@@ -152,6 +187,29 @@ def run():
     for cat, stats in sorted(category_stats.items()):
         rate = 100 * stats["blocked"] / stats["total"]
         print(f"  {cat:35s} {rate:5.1f}%  ({stats['blocked']}/{stats['total']})")
+
+    # ADDED: "reached the model" vs "actually hijacked" -- reports the
+    # benign_question_similarity distribution for the reached-model subset
+    # (measurement only, no invented cutoff/threshold -- see the field's
+    # docstring in this script above). A meaningful blocking/reporting
+    # threshold should only be set after this distribution is compared
+    # against the same measurement on genuinely clean responses
+    # (run_external_fpr_eval.py), the same way SEMANTIC_THRESHOLD was
+    # calibrated from real data rather than guessed.
+    bq_sims = [r["benign_question_similarity"] for r in results
+               if r["benign_question_similarity"] is not None]
+    if bq_sims:
+        bq_sims_sorted = sorted(bq_sims)
+        mid = len(bq_sims_sorted) // 2
+        median_bq = bq_sims_sorted[mid] if len(bq_sims_sorted) % 2 else \
+            (bq_sims_sorted[mid-1] + bq_sims_sorted[mid]) / 2
+        print(f"\nTask-hijack signal (reached-model responses only, n={len(bq_sims)}):")
+        print(f"  benign_question_similarity: "
+              f"mean={sum(bq_sims)/len(bq_sims):.3f}  "
+              f"median={median_bq:.3f}  "
+              f"min={min(bq_sims):.3f}  max={max(bq_sims):.3f}")
+        print(f"  (measurement only -- no cutoff applied here; see the CSV's "
+              f"benign_question_similarity column to inspect individual cases)")
 
     summary = {
         "model": selected_model,
