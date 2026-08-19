@@ -209,6 +209,49 @@ AUTHORIZATION_CLAIMS = [
     r"(your|this)\s+(policy|guideline|restriction|filter)\s+(does\s+not\s+apply|exempt|excludes?)\s+(researcher|admin|developer|me)",
 ]
 
+# ── Pattern 9: Indirect Output-Hijack Instructions ────────────────────────────
+# ADDED: found via external validation (BIPIA, Microsoft) -- the 986-sample
+# external attack run showed 0% detection across ~15 attack categories.
+# Inspecting the actual injected instruction TEXT (not the generated
+# response, and not SecureRAG's own generator -- these are BIPIA's own
+# text_attack_train.json) revealed a consistent grammatical structure
+# absent from every existing tier above: an imperative verb governing
+# "your response/answer/reply/message" -- i.e. the injected text
+# addresses the model's OUTPUT directly ("Add X to your response",
+# "Modify your answer to..."), which is exactly what legitimate retrieved
+# DATA (an email, a table row) never does.
+#
+# METHODOLOGY NOTE (important -- an earlier draft of this pattern violated
+# it and was caught/corrected before landing): the verb list below was
+# derived from text_attack_train.json ONLY and then frozen. It was
+# evaluated EXACTLY ONCE against text_attack_test.json (a split it had
+# never been adjusted against) to get an honest, non-inflated estimate of
+# how it generalizes -- no verbs were added or tuned in response to what
+# was seen in the test split, even though doing so would have raised the
+# reported number. Results:
+#   TRAIN (fit):        45/75 (60.0%) matched, full coverage on 8/15 categories
+#   TEST  (held-out):   34/75 (45.3%) matched -- the honest generalization estimate
+#   Benign FP check:     0/1,850 real BIPIA email/table samples (both splits)
+# The 15-point train->test drop is expected and is reported here rather
+# than closed by peeking at the test set -- closing it that way would
+# just move the "co-design bias" problem from SecureRAG's own generator
+# onto BIPIA's phrasing instead of fixing it.
+#
+# NOT covered by this tier, by design -- a structurally different and
+# harder attack family with NO self-referential "your response" phrasing
+# at all (the injected text is just a plain alternate question/task, e.g.
+# "What is the capital of Brazil?", "Analyze the trend of electric car
+# sales..."): Information Retrieval, Content Creation, Learning and
+# Tutoring, Programming Help, Task Automation, Business Intelligence,
+# Conversational Agent, Research Assistance, Sentiment Analysis. This
+# remains an OPEN, documented limitation -- not chased with more
+# special-cased keywords, to avoid overfitting this tier to BIPIA's
+# specific phrasing instead of a genuinely generalizable structure.
+OUTPUT_HIJACK_PATTERNS = [
+    r"\b(add|integrate|modify|include|augment|enhance|replace|substitute|use|convert|render|introduce|misspell|scramble|jumble|rearrange|anagram|remove|group|combine|provide)\b.{0,60}?\byour\s+(response|answer|reply|message)\b",
+    r"\bin\s+your\s+(response|reply|answer)\b\s*,",
+]
+
 # ── All patterns with risk ────────────────────────────────────────────────────
 
 ALL_TIERS = [
@@ -220,6 +263,7 @@ ALL_TIERS = [
     ("context_poisoning",      POISONING_PATTERNS,         "MEDIUM"),
     ("trust_escalation",       TRUST_ESCALATION_PATTERNS,  "MEDIUM"),
     ("indirect_authorization", AUTHORIZATION_CLAIMS,       "MEDIUM"),
+    ("output_hijack",          OUTPUT_HIJACK_PATTERNS,     "MEDIUM"),
 ]
 
 # ── L0 Fast Pre-Screen ─────────────────────────────────────────────────────
@@ -284,6 +328,7 @@ def get_violation_details(violation_type: str) -> str:
         "context_poisoning": "Attempt to poison the retrieval context",
         "trust_escalation": "Attempt to escalate trust for malicious purposes",
         "indirect_authorization": "Indirect authorization or poisoned claims",
+        "output_hijack": "Embedded instruction attempting to hijack the response format/content (indirect prompt injection)",
         "none": "No specific rule violation detected"
     }
     # pipeline.py expects text, so we're re-describing it directly
