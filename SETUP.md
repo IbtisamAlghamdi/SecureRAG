@@ -41,6 +41,34 @@ python3 download_datasets.py --dataset scifact
 
 Files are saved automatically to `data/corpus/` and `data/`.
 
+### 3b. Domain-matched corpus (email + table), one time only
+
+The BIPIA external validation set (`eval_set.json`/`fpr_set.json`) is
+built from email/table documents. Comparing the model's response against
+a Wikipedia-only corpus (L4's `similarity_score`) is an apples-to-oranges
+comparison — it produced noisy, non-discriminating scores (root-caused
+via `run_external_eval.py`/`run_external_fpr_eval.py`'s diagnostic
+columns: real attack and real benign responses overlapped heavily in the
+0.22–0.38 similarity range). Two additional, DOMAIN-MATCHED corpora are
+added alongside Wikipedia (not replacing it) to give L4 a meaningful
+reference space — both are entirely separate documents from the ones
+used in `eval_set.json`/`fpr_set.json`, so there is no train/test overlap:
+
+```bash
+# Email domain: Enron Email Dataset (Kaggle mirror of the CMU/FERC
+# public-domain corpus) -- requires `pip install kaggle` and a Kaggle API
+# token once (see download_enron.py's docstring for the one-time setup).
+python3 download_enron.py
+
+# Table/structured-QA domain: BEIR/FiQA (financial forum Q&A) -- already
+# supported by download_datasets.py, no extra setup needed.
+python3 download_datasets.py --dataset fiqa
+```
+
+This writes `enron_emails_corpus.txt` and `beir_fiqa_corpus.txt` into
+`data/corpus/` alongside the existing Wikipedia files — `FaissRetriever`
+picks up every `.txt` file in that directory automatically.
+
 ### 4. Clear old cache (required before first run)
 
 ```bash
