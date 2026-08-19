@@ -57,9 +57,20 @@ CRITICAL_INJECTION_PATTERNS = [
 ]
 
 # Unicode normalization tables (to prevent attacks using similar characters) ─────────────────
+# FIXED: this map was missing two homoglyph codepoints that are at least as
+# common in real unicode-substitution attacks as the ones already covered --
+# CYRILLIC SMALL LETTER O (U+043E) and LATIN SMALL LETTER SCRIPT G (U+0261).
+# Found via direct codepoint comparison against the attack generator's own
+# homoglyph encoder: it substitutes 'o'->U+043E, but this map only had 'o'
+# covered via GREEK SMALL LETTER OMICRON (U+03BF) -- a different character
+# that happens to look similar but never normalizes back. 'g' had no
+# lookalike entry at all. Both additions are general Unicode normalization
+# (any word using these letters benefits, not just the two verbs that
+# exposed the gap) -- verified zero new false positives on the full BIPIA
+# benign set and the internal benign generator after adding them.
 UNICODE_LOOKALIKE_MAP = {
-    'і': 'i', 'ο': 'o', 'а': 'a', 'е': 'e', 'ѕ': 's',
-    'ţ': 't', 'ƅ': 'b', 'ƀ': 'b', 'ƍ': 'd', 'ƍ': 'd',
+    'і': 'i', 'ο': 'o', 'о': 'o', 'а': 'a', 'е': 'e', 'ѕ': 's',
+    'ţ': 't', 'ƅ': 'b', 'ƀ': 'b', 'ƍ': 'd', 'ƍ': 'd', 'ɡ': 'g',
     '\u200b': '',  # Zero-width space
     '\u200c': '',  # Zero-width non-joiner
     '\u200d': '',  # Zero-width joiner
@@ -142,6 +153,31 @@ def _decode_html_entities(text: str) -> str:
     return html.unescape(text)
 
 
+def _decode_hex_escapes(text: str) -> str:
+    """Decode \\xNN hex-escape sequences back to their characters, the same
+    way _decode_html_entities decodes &#NN; and _decode_base64_if_attack
+    decodes Base64 -- so a word spelled as "\\x64\\x69\\x73..." reaches the
+    Step 5 pattern matching below as plain "dis...", instead of slipping
+    through every word-based pattern unrecognized. Decoding on its own does
+    not mark anything suspicious (that is still Step 5's job); only
+    printable-ASCII codepoints are decoded, so this cannot introduce control
+    characters or corrupt genuinely binary-looking content.
+    ADDED: found via direct testing -- \\x-escaped attack payloads passed
+    through completely unchanged (0/N caught) because no earlier step
+    handled this encoding at all; the generic \\x[0-9a-f]{2} regex in the
+    anomaly detector only ever added a fixed score contribution, it never
+    recovered the underlying words for the rule-based filter to see.
+    """
+    def _repl(match):
+        try:
+            code = int(match.group(1), 16)
+        except ValueError:
+            return match.group(0)
+        return chr(code) if 0x20 <= code < 0x7f else match.group(0)
+
+    return re.sub(r'\\x([0-9a-fA-F]{2})', _repl, text)
+
+
 def _remove_template_injections(text: str) -> str:
     """
     Removes Template Injection attempts targeting Mistral/Llama templates.
@@ -177,6 +213,10 @@ def sanitize_input(text: str) -> str:
 
     # ── Step 2: Decompose HTML entities─────────────
     text = _decode_html_entities(text)
+
+    # ── Step 2.5 (ADDED): Decode \xNN hex escapes for the same reason as
+    # Step 2 -- see _decode_hex_escapes' docstring.
+    text = _decode_hex_escapes(text)
 
     # ── Step 3: Uncover and decode Base64 (then process the decoded content) ───────
     text, was_base64 = _decode_base64_if_attack(text)

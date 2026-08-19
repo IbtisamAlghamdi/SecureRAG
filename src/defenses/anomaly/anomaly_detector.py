@@ -73,13 +73,23 @@ WEIGHTED_KEYWORDS = {**HIGH_RISK_KEYWORDS, **GENERIC_CONTEXT_KEYWORDS}
 # Advanced camouflage patterns
 OBFUSCATION_PATTERNS = [
     (r"^[A-Za-z0-9+/=]{20,}$",           25.0, "base64_payload"),
-    (r"[і][g][n][о][r][е]",              15.0, "cyrillic_ignore"),    # Cyrillic lookalikes
+    # FIXED: required a plain ASCII 'g', but the generator's own homoglyph
+    # encoder substitutes 'g' with U+0261 (LATIN SMALL LETTER SCRIPT G), so
+    # this could never match its own "ignore"/"disregard"/"forget" cyrillic
+    # output. Also extended to disregard/forget (same gap as elsewhere).
+    (r"і[gɡ]nоrе|dіs?rе[gɡ]аrd|fоr[gɡ]еt", 15.0, "cyrillic_ignore"),    # Cyrillic lookalikes
     (r"\u200b|\u200c|\u200d|\u2060",      18.0, "zero_width_chars"),  # Zero-width
     (r"[a-z]\s[a-z]\s[a-z]\s[a-z]",     10.0, "char_spacing"),
-    (r"ｉｇｎｏｒｅ|ｂｙｐａｓｓ",        15.0, "fullwidth_chars"),
+    (r"ｉｇｎｏｒｅ|ｂｙｐａｓｓ|ｄｉｓｒｅｇａｒｄ|ｆｏｒｇｅｔ",        15.0, "fullwidth_chars"),
     (r"(?:&#\d+;){3,}",                   15.0, "html_entities"),
     (r"\\x[0-9a-f]{2}",                   12.0, "hex_escape"),
-    (r"1gn0r3|byp4ss|0verr1de",          12.0, "leetspeak_attack"),
+    # FIXED: "byp4ss" could never match real leetspeak output -- the actual
+    # substitution set (i->1,e->3,o->0,a->4,s->5,t->7, no letter->6/9) always
+    # produces "byp455", never "byp4ss" (the double-s stays a double-s only
+    # if 's' isn't substituted, but it is). Corrected to the reachable form
+    # and extended to disregard/forget for the same reason token_smuggling's
+    # other obfuscation tiers needed it (see rule_filter.py DIRECT_PATTERNS).
+    (r"1gn0r3|byp4[5s]{2}|0verr1de|d1[5s]r[3e]g[4a]rd|f0rg[3e][t7]", 12.0, "leetspeak_attack"),
     (r"i-g-n-o-r-e|b-y-p-a-s-s",        10.0, "hyphenated"),
 ]
 
@@ -276,7 +286,27 @@ CAMOUFLAGE_PATTERNS = [
     (r"for\s+a\s+(story|novel|creative|fiction)|creative\s+writing\s+scenario", 6.0, "creative_framing"),
     (r"if\s+you\s+had\s+no\s+restriction|if\s+you\s+were\s+unrestricted",   10.0, "no_restriction_framing"),
     (r"security\s+(research|awareness|training|demo)",                         7.0,  "security_framing"),
-    (r"(pen\s+test|penetration\s+test|red\s+team)\s+(exercise|scenario|simulation)", 8.0, "pentest_framing"),
+    # FIXED: required a mandatory "exercise/scenario/simulation" suffix and
+    # a space (not hyphen) between "pen"/"red" and "test"/"team". Found via
+    # direct testing that "My team is pen-testing this system" and "this is
+    # a red team test authorized..." both scored 0 -- the hyphen and the
+    # "-ing"/"test" forms are common real phrasing this pattern never
+    # covered, and the suffix requirement excluded framings that name the
+    # activity without a trailing noun at all.
+    (r"(pen[\s-]*test(ing)?|penetration\s+test(ing)?|red[\s-]+team)(\s+(exercise|scenario|simulation|test))?", 8.0, "pentest_framing"),
+    # ADDED: generalizes the "as/for/during <pretext> ... <suspicious ask>"
+    # structure already used by the patterns in this list to pretext nouns
+    # the existing entries don't cover (UX research project, academic
+    # paper, course/university project) combined with the broader set of
+    # asks the semantic_camouflage tier actually pairs them with (not just
+    # "no restriction"/"bypass" wording, but "extract"/"expose"/"attacker"/
+    # "prompt injection"/"vulnerable" too). Still requires both a pretext
+    # opener AND a suspicious-ask word nearby -- a bare "for my university
+    # assignment" with no ask attached does not trigger this.
+    (r"(as\s+(a|an|part\s+of\s+a)|for\s+(a|an)|during\s+a|in\s+a|my\s+team\s+is)\s+.{0,50}"
+     r"(academic\s+paper|university\s+assignment|course\s+project|research\s+project|ux\s+research|creative\s+writing|debugging\s+scenario).{0,60}"
+     r"(vulnerab|extract|expose|configur|attacker|prompt\s+injection|without\s+(any\s+)?filter|hidden|no\s+ethical|jailbroken|operating\s+rules)",
+     9.0, "broad_pretext_framing"),
     (r"(extract|identify|list|find)\s+\w+\s+from\s*[:\-]?\s*[\'\"(].*?(ignore|bypass|override|instruction)", 15.0, "nested_task_injection"),
     (r"(translate|summarize|analyze|paraphrase)\s*[:\-]?\s*[\'\"(].*?(ignore|bypass|override|forget)", 15.0, "nested_translate_injection"),
     (r"new\s+instruction|additional\s+instruction|secret\s+instruction|hidden\s+command", 12.0, "nested_instruction"),
