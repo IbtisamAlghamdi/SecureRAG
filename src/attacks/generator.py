@@ -175,12 +175,12 @@ documented in: BIPIA (Microsoft), SafeRAG (2025), USENIX Security 2024.
         self._attack_tiers = [
             ("conversational_drift",   self.conversational_drift,    0.10),
             ("semantic_camouflage",    self.semantic_camouflage,     0.12),
-            ("context_poisoning",      self.context_poisoning,       0.15),  # الأخطر
+            ("context_poisoning",      self.context_poisoning,       0.15),  # highest risk
             ("psychological_manip",    self.psychological_manipulation, 0.12),
             ("nested_hiding",          self.nested_hiding,           0.13),
             ("token_smuggling",        self.token_smuggling,         0.13),
             ("trust_escalation",       self.trust_escalation,        0.10),
-            ("indirect_poisoning",     self.indirect_poisoning,      0.15),  # الأخطر
+            ("indirect_poisoning",     self.indirect_poisoning,      0.15),  # highest risk
         ]
 
     # Obfuscation Methods

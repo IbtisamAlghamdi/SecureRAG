@@ -68,7 +68,7 @@ class FaissRetriever:
                     content = f.read().strip()
                 if not content:
                     continue
-                # Smart chunking مع overlap
+                # Smart chunking with overlap
                 step = settings.CHUNK_SIZE - settings.CHUNK_OVERLAP
                 chunks = [content[i:i + settings.CHUNK_SIZE]
                           for i in range(0, len(content), step)]
@@ -88,7 +88,7 @@ class FaissRetriever:
 
     def _build_index(self):
         if self.embeddings.size == 0:
-            return faiss.IndexFlatIP(384)  # Inner Product (للـ normalized vectors)
+            return faiss.IndexFlatIP(384)  # Inner Product (for normalized vectors)
 
         dim = self.embeddings.shape[1]
         # IndexFlatIP performs best with normalized embeddings (cosine similarity).

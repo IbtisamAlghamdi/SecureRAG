@@ -226,7 +226,7 @@ class AblationRAG(SecureRAG):
 def plot_multirun_summary(runs, mean_asr, std_asr,
                           mean_fpr, std_fpr,
                           mean_lat, std_lat):
-    """Figure 1: ملخص الـ 5 تشغيلات — ASR / FPR / Latency"""
+    """Figure 1: Summary of the 5 runs — ASR / FPR / Latency"""
     fig, axes = plt.subplots(1, 3, figsize=(15, 6))
     fig.suptitle(
         f'SecureRAG Multi-Run Evaluation Summary (N={N_RUNS} independent runs)',
@@ -530,7 +530,7 @@ def load_sc_examples(runs=None):
             if len(examples) >= 5:
                 break
 
-    # fallback من المولّد -- بس لو ما فيه بيانات رن فعلية إطلاقًا
+    # fallback to the generator -- only used if there's no real run data at all
     if len(examples) < 3:
         gen = RealisticAttackGenerator()
         for q in gen.semantic_camouflage[:3]:

@@ -69,7 +69,7 @@ UNICODE_LOOKALIKE_MAP = {
 
 
 def _normalize_unicode(text: str) -> str:
-    """تطبيع Unicode ومنع هجمات الأحرف المشابهة (Homoglyph Attacks)"""
+    """Unicode normalization and prevention of lookalike-character (homoglyph) attacks"""
     # NFC normalization first
     text = unicodedata.normalize('NFC', text)
     # Replacing similar letters
@@ -126,7 +126,7 @@ def _decode_base64_if_attack(text: str) -> Tuple[str, bool]:
             new_text = text.replace(candidate, f"[DECODED: {decoded}]")
             return f"[BASE64_DECODED] {new_text}", True
 
-    # Case 3: أي base64 طويل في النص
+    # Case 3: any long base64 string anywhere in the text
     all_b64 = re.findall(r'[A-Za-z0-9+/]{30,}={0,2}', text)
     for candidate in all_b64:
         decoded = _try_decode(candidate)
@@ -148,11 +148,11 @@ def _remove_template_injections(text: str) -> str:
 
     This is a direct application of Channel Separation — preventing the user from modifying the system's help channel.
     """
-    # إزالة محاولات كسر قوالب Mistral
+    # Remove attempts to break Mistral's prompt template
     text = re.sub(r'\[/?INST\]', '[FILTERED]', text, flags=re.IGNORECASE)
     text = re.sub(r'<</?SYS>>', '[FILTERED]', text, flags=re.IGNORECASE)
     text = re.sub(r'<s>\s*\[', '[', text, flags=re.IGNORECASE)
-    # إزالة Template Injection العام
+    # Remove generic template injection
     # FIXED: same over-broad bare-syntax issue as CRITICAL_INJECTION_PATTERNS
     # above -- only filter {{ }} / ${ } when the content inside actually
     # references something a real injection payload would target.
