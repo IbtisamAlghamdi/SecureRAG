@@ -81,6 +81,19 @@ def run():
 
         elapsed = res.get("latency", 0.0)
 
+        # DIAGNOSTIC (added after the 98% external-ASR collapse following the
+        # SEMANTIC_THRESHOLD 0.45->0.15 fix): mirrors the columns added to
+        # run_external_fpr_eval.py so both sides of the trade-off can be
+        # compared on the same footing. anomaly_score tells us whether L3 is
+        # even close to flagging attacks that reach the model; similarity_score
+        # (only populated for cases that reach L4, i.e. risk HIGH/MEDIUM or
+        # anomaly_score > 0) tells us whether real attack responses are, in
+        # fact, staying above 0.15 -- the mechanism to confirm/deny before
+        # touching the threshold again.
+        sim_score = res.get("similarity_score", None)
+        l4_checked = res.get("l4_checked", res.get("flag") == "semantic")
+        response_snippet = (res.get("response") or "")[:200]
+
         results.append({
             "id": sample["id"],
             "attack_category": sample["attack_category"],
@@ -89,7 +102,11 @@ def run():
             "flag": res.get("flag", ""),
             "blocking_layer": layer,
             "risk_level": res.get("risk", ""),
+            "anomaly_score": res.get("anomaly_score", ""),
+            "l4_checked": l4_checked,
+            "similarity_score": sim_score,
             "latency_sec": elapsed,
+            "response_snippet": response_snippet,
         })
 
         layer_counts[layer] += 1

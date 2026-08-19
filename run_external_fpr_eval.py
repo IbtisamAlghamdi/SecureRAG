@@ -100,6 +100,7 @@ def run():
         # response snippet) tells us which mechanism is actually
         # responsible instead of guessing.
         sim_score = res.get("similarity_score", None)
+        l4_checked = res.get("l4_checked", res.get("flag") == "semantic")
         response_snippet = (res.get("response") or "")[:200]
 
         results.append({
@@ -110,6 +111,7 @@ def run():
             "blocking_layer": layer,
             "risk_level": res.get("risk", ""),
             "anomaly_score": res.get("anomaly_score", ""),
+            "l4_checked": l4_checked,
             "similarity_score": sim_score,
             "latency_sec": elapsed,
             "response_snippet": response_snippet,

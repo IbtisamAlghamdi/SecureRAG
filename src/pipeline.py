@@ -211,13 +211,25 @@ SecureRAG Framework — A five-layer defense built on System Boundaries    """
             # NOTE: whether that 4.2% actually gets blocked (not just
             # checked) can only be confirmed with the real model -- re-run
             # diagnose_fpr.py after pulling this.
+            # DIAGNOSTIC (added after the 98% external-ASR collapse following
+            # the SEMANTIC_THRESHOLD 0.45->0.15 fix): sim_score used to only
+            # get attached to the result when L4 actually blocked. That threw
+            # away the score for every response that reached L4, was checked,
+            # and PASSED -- exactly the population we need to inspect now
+            # (real attack responses that similarity-based L4 is letting
+            # through). l4_checked/l4_sim_score are always recorded when the
+            # gate runs, regardless of the suspicious/not-suspicious outcome.
+            l4_checked  = False
+            l4_sim_score = None
             if response and (risk_level in ["HIGH", "MEDIUM"] or anomaly_score > 0):
                 suspicious, sim_score = semantic_response_is_suspicious(
                     response, self.retriever.get_embeddings(), self.embedder
                 )
+                l4_checked  = True
+                l4_sim_score = round(sim_score, 4)
                 if suspicious:
                     result = self._block("semantic", start_time, risk_level)
-                    result["similarity_score"] = round(sim_score, 4)
+                    result["similarity_score"] = l4_sim_score
                     self._session_stats["by_layer"]["semantic"] += 1
                     return result
 
@@ -228,6 +240,8 @@ SecureRAG Framework — A five-layer defense built on System Boundaries    """
                 "risk":          risk_level.lower(),
                 "layer":         "none",
                 "anomaly_score": anomaly_score,
+                "l4_checked":    l4_checked,
+                "similarity_score": l4_sim_score,
                 "latency":       round(time.time() - start_time, 3)
             }
 
