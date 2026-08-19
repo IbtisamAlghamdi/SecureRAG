@@ -31,7 +31,9 @@ from src.defenses.rules.rule_filter import (
     rule_based_detector_detailed, get_violation_details, quick_high_risk_scan
 )
 from src.defenses.anomaly.anomaly_detector import compute_anomaly_score, get_ars_report
-from src.defenses.semantic.semantic_detector import semantic_response_is_suspicious
+from src.defenses.semantic.semantic_detector import (
+    semantic_response_is_suspicious, query_response_similarity
+)
 
 # Detailed blocking messages
 BLOCK_MESSAGES = {
@@ -221,15 +223,27 @@ SecureRAG Framework — A five-layer defense built on System Boundaries    """
             # gate runs, regardless of the suspicious/not-suspicious outcome.
             l4_checked  = False
             l4_sim_score = None
+            l4_query_response_sim = None
             if response and (risk_level in ["HIGH", "MEDIUM"] or anomaly_score > 0):
                 suspicious, sim_score = semantic_response_is_suspicious(
                     response, self.retriever.get_embeddings(), self.embedder
                 )
                 l4_checked  = True
                 l4_sim_score = round(sim_score, 4)
+                # MEASUREMENT ONLY -- see query_response_similarity's
+                # docstring. Computed here (not gating anything yet) so we
+                # get real numbers for both signals from the SAME run,
+                # instead of a third round-trip to collect this separately.
+                try:
+                    l4_query_response_sim = round(
+                        query_response_similarity(sanitized_query, response, self.embedder), 4
+                    )
+                except Exception:
+                    l4_query_response_sim = None
                 if suspicious:
                     result = self._block("semantic", start_time, risk_level)
                     result["similarity_score"] = l4_sim_score
+                    result["query_response_similarity"] = l4_query_response_sim
                     self._session_stats["by_layer"]["semantic"] += 1
                     return result
 
@@ -242,6 +256,7 @@ SecureRAG Framework — A five-layer defense built on System Boundaries    """
                 "anomaly_score": anomaly_score,
                 "l4_checked":    l4_checked,
                 "similarity_score": l4_sim_score,
+                "query_response_similarity": l4_query_response_sim,
                 "latency":       round(time.time() - start_time, 3)
             }
 

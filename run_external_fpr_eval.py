@@ -100,6 +100,7 @@ def run():
         # response snippet) tells us which mechanism is actually
         # responsible instead of guessing.
         sim_score = res.get("similarity_score", None)
+        qr_sim = res.get("query_response_similarity", None)
         l4_checked = res.get("l4_checked", res.get("flag") == "semantic")
         response_snippet = (res.get("response") or "")[:200]
 
@@ -113,6 +114,7 @@ def run():
             "anomaly_score": res.get("anomaly_score", ""),
             "l4_checked": l4_checked,
             "similarity_score": sim_score,
+            "query_response_similarity": qr_sim,
             "latency_sec": elapsed,
             "response_snippet": response_snippet,
         })

@@ -91,6 +91,7 @@ def run():
         # fact, staying above 0.15 -- the mechanism to confirm/deny before
         # touching the threshold again.
         sim_score = res.get("similarity_score", None)
+        qr_sim = res.get("query_response_similarity", None)
         l4_checked = res.get("l4_checked", res.get("flag") == "semantic")
         response_snippet = (res.get("response") or "")[:200]
 
@@ -105,6 +106,7 @@ def run():
             "anomaly_score": res.get("anomaly_score", ""),
             "l4_checked": l4_checked,
             "similarity_score": sim_score,
+            "query_response_similarity": qr_sim,
             "latency_sec": elapsed,
             "response_snippet": response_snippet,
         })

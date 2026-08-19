@@ -95,3 +95,33 @@ def semantic_response_is_suspicious(answer: str, corpus_embeddings,
 
     threshold = settings.get_semantic_threshold()
     return (max_sim < threshold), max_sim
+
+
+def query_response_similarity(query: str, answer: str, embedder) -> float:
+    """
+    A second, ORTHOGONAL signal to corpus-similarity: how closely the
+    response's own embedding matches the ORIGINAL USER QUERY's embedding.
+
+    Why this exists: corpus-similarity (semantic_response_is_suspicious)
+    asks "does this response sound like it belongs to the knowledge
+    domain?" -- a topic-level question. Most BIPIA-style attacks are TASK
+    HIJACKS (translate this, write ad copy, reformat this, etc.), not
+    off-topic hallucinations -- the hijacked response is often still
+    fluent, on-domain-sounding text, so it can score fine against the
+    corpus while still being a completely different task than what the
+    user actually asked. query_response_similarity instead asks "did the
+    model actually answer what was asked?" -- a task-adherence question,
+    which corpus similarity cannot see by construction.
+
+    Currently MEASUREMENT ONLY (see pipeline.py) -- not yet gating any
+    block decision. No threshold has been fit to real attack-vs-benign
+    data for this signal yet; logging it alongside similarity_score is
+    the first step, so a threshold (if one turns out to be justified at
+    all) gets picked from real separation between the two distributions,
+    not invented.
+    """
+    q_emb = embedder.encode(query)
+    a_emb = embedder.encode(answer)
+    q_norm = q_emb / (np.linalg.norm(q_emb) + 1e-10)
+    a_norm = a_emb / (np.linalg.norm(a_emb) + 1e-10)
+    return float(np.dot(q_norm, a_norm))
