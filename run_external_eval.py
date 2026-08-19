@@ -42,13 +42,22 @@ def load_eval_set():
 def run():
     parser = argparse.ArgumentParser(description=__doc__)
     add_model_arg(parser)
+    parser.add_argument("--limit", type=int, default=None,
+                         help="Only run the first N samples (fast diagnostic subset). "
+                              "eval_set.json is pre-shuffled by build_eval_set.py, so this "
+                              "is already a random cross-section of attack categories, not "
+                              "just the first ones built.")
     args = parser.parse_args()
     selected_model = resolve_model(args.model)
     suffix = safe_filename(selected_model)
+    if args.limit:
+        suffix += f"__subset{args.limit}"
     results_csv_path = SCRIPT_DIR / f"bipia_external_results__{suffix}.csv"
     summary_json_path = SCRIPT_DIR / f"bipia_external_summary__{suffix}.json"
 
     samples = load_eval_set()
+    if args.limit:
+        samples = samples[:args.limit]
     print(f"Loading SecureRAG ({selected_model})...")
     rag = SecureRAG(enable_defenses=True, model_path=settings.LLM_MODEL_PATH)
     print(f"Running {len(samples)} BIPIA samples...\n")
