@@ -31,27 +31,42 @@ any threshold/formula decision. A small non-zero result here (not 0.00%) is
 the expected, credible outcome -- do not treat 0.00% on THIS file as a bug
 to chase away either; just report whatever it actually is.
 
+ADDED (--seed): reshuffling fpr_set.json's own 333 samples changes nothing
+-- FPR is a count, not order-sensitive, and that file only ever has those
+333 total, so there is no larger pool inside IT to draw a different random
+subset from. --seed instead lets you draw a genuinely different random 333
+from the much bigger ~1,100-document raw pool on each run (still excluding
+fpr_set.json's original 333 every time), producing
+fpr_set_holdout_seed<N>.json so different draws don't overwrite each other.
+
 Usage:
-    python3 build_fresh_holdout_fpr.py
-    python3 run_external_fpr_eval.py --file fpr_set_holdout.json   # if that
-        flag exists; otherwise point the eval script at the new file the
-        same way it currently points at fpr_set.json.
+    python3 build_fresh_holdout_fpr.py                  # default seed 9001
+    python3 build_fresh_holdout_fpr.py --seed 123        # a different draw
+    python3 build_fresh_holdout_fpr.py --seed 123 --n 200  # smaller/faster
+    python3 run_external_fpr_eval.py --file fpr_set_holdout_seed123.json   # if
+        that flag exists; otherwise point the eval script at the new file
+        the same way it currently points at fpr_set.json.
 """
 
 import json
 import random
 from pathlib import Path
 
+import argparse
+
 SCRIPT_DIR = Path(__file__).parent
 DATA_DIR = SCRIPT_DIR / "data"
 EXISTING_FPR_SET = SCRIPT_DIR / "fpr_set.json"
-OUT_PATH = SCRIPT_DIR / "fpr_set_holdout.json"
 
-# Deliberately different from fpr_set.json's own build seed and from
-# build_eval_set.py's SEED=42, so this can't accidentally reconstruct the
-# same sample even by coincidence.
-SEED = 9001
-N_SAMPLES = 300
+# ADDED: --seed lets you pull a genuinely DIFFERENT random 333-query subset
+# from the ~1,100-document raw pool on each run (unlike fpr_set.json, which
+# only ever has its fixed 333 -- reshuffling that file's own order changes
+# nothing, since FPR is a count, not order-sensitive). Each seed still
+# excludes everything already used in fpr_set.json, so no seed can ever
+# leak back into what was used for threshold tuning. Output filename
+# includes the seed so different draws don't overwrite each other.
+DEFAULT_SEED = 9001
+N_SAMPLES = 333  # matches fpr_set.json's own size, for a direct apples-to-apples comparison
 
 
 def load_jsonl(path):
@@ -88,8 +103,9 @@ def already_used_texts():
     return {item["combined_query"] for item in existing}
 
 
-def build():
-    rng = random.Random(SEED)
+def build(seed: int, n_samples: int):
+    rng = random.Random(seed)
+    out_path = SCRIPT_DIR / f"fpr_set_holdout_seed{seed}.json"
     all_docs = load_all_raw_documents()
     if not all_docs:
         print(f"ERROR: no raw BIPIA files found under {DATA_DIR}/. "
@@ -114,31 +130,45 @@ def build():
         fresh_docs.append((doc, combined_query))
 
     print(f"Never-before-used documents remaining: {len(fresh_docs)}")
-    if len(fresh_docs) < N_SAMPLES:
-        print(f"NOTE: fewer than {N_SAMPLES} fresh documents available -- "
+    if len(fresh_docs) < n_samples:
+        print(f"NOTE: fewer than {n_samples} fresh documents available -- "
               f"using all {len(fresh_docs)} instead.")
 
     rng.shuffle(fresh_docs)
-    chosen = fresh_docs[:N_SAMPLES]
+    chosen = fresh_docs[:n_samples]
 
     samples = []
     for i, (doc, combined_query) in enumerate(chosen):
         samples.append({
-            "id": f"bipia_fpr_holdout_{i:05d}",
+            "id": f"bipia_fpr_holdout_seed{seed}_{i:05d}",
             "source": "BIPIA (Microsoft, unmodified/clean, NEVER used for threshold tuning)",
             "source_type": "email" if "email" in doc.get("_src", "") else "unknown",
             "combined_query": combined_query,
             "expected_label": "benign",
         })
 
-    with open(OUT_PATH, "w", encoding="utf-8") as f:
+    with open(out_path, "w", encoding="utf-8") as f:
         json.dump(samples, f, ensure_ascii=False, indent=2)
 
-    print(f"\nDone: wrote {len(samples)} genuinely fresh benign samples to {OUT_PATH}")
+    print(f"\nDone: wrote {len(samples)} genuinely fresh benign samples to {out_path}")
     print("This file has zero overlap with anything used to pick "
           "ANOMALY_THRESHOLD, SEMANTIC_THRESHOLD, or the L3 length-cap. "
           "Report FPR on THIS file as the real held-out number.")
+    print(f"\nWant a DIFFERENT random 333 next time? Just re-run with a new "
+          f"--seed (e.g. --seed {seed + 1}) -- each seed draws its own "
+          f"random subset of the ~1,100-document pool, still excluding "
+          f"fpr_set.json's original 333 every time.")
 
 
 if __name__ == "__main__":
-    build()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--seed", type=int, default=DEFAULT_SEED,
+                     help=f"random seed for this draw (default {DEFAULT_SEED}). "
+                          f"Use a different value each time you want a genuinely "
+                          f"different random 333-query subset -- reusing a seed "
+                          f"reproduces the exact same subset (by design, for "
+                          f"repeatable reporting).")
+    ap.add_argument("--n", type=int, default=N_SAMPLES,
+                     help=f"how many queries to draw (default {N_SAMPLES}).")
+    args = ap.parse_args()
+    build(seed=args.seed, n_samples=args.n)
