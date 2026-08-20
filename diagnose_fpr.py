@@ -62,9 +62,24 @@ def run():
         results.append({
             "query": query,
             "blocked": is_blocked,
+            # ADDED: threshold_sensitivity_analysis.py expects this exact
+            # column name (matching run_external_fpr_eval.py's convention)
+            # -- every block on a benign-only set is a false positive by
+            # definition, so this just mirrors "blocked".
+            "false_positive": is_blocked,
             "flag": res.get('flag', ''),
             "layer": res.get('layer', ''),
             "risk": res.get('risk', ''),
+            # ADDED: without these, a SEMANTIC_THRESHOLD sensitivity sweep
+            # (threshold_sensitivity_analysis.py) can only ever be run
+            # against the EXTERNAL BIPIA benign set -- there was no way to
+            # check whether a candidate threshold is safe for the INTERNAL
+            # benign generator specifically before committing it to
+            # settings.py. Same columns run_external_fpr_eval.py already
+            # logs, so both sides can be swept with the same tool.
+            "l4_checked": res.get('l4_checked', False),
+            "similarity_score": res.get('similarity_score', ''),
+            "query_response_similarity": res.get('query_response_similarity', ''),
             "latency": res.get('latency', 0.0),
         })
         if is_blocked:
