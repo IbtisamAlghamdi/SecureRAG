@@ -839,8 +839,3 @@ class BenignQueryGenerator:
         return out
 
 
-AutoAttackGenerator = RealisticAttackGenerator
-
-class AttackGenerator(RealisticAttackGenerator):
-    """Alias ​​for compatibility with benchmark_comparison.py and comprehensive_benchmark.py"""
-    pass

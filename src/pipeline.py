@@ -138,11 +138,13 @@ SecureRAG Framework — A five-layer defense built on System Boundaries    """
         not to execute instructions found inside it -- training-free, zero
         extra model calls, and a direct reinforcement of this project's own
         "System Boundaries" / channel-separation thesis, not a bolt-on.
-        UNVALIDATED so far -- this changes model BEHAVIOR (not a static
-        filter), so it can only be confirmed safe/effective with the real
-        model: re-run diagnose_fpr.py (internal FPR must stay ~0) and
-        run_external_eval.py (external ASR, esp. the 9 zero-detection
-        categories specifically) after pulling this.
+        RESULT (quick_sample_test.py, two independent 50-external-sample
+        draws with the real model, same 9 categories both times): 0/14
+        blocked in EITHER draw -- no measurable effect on this model for
+        the categories it targets. Internal FPR unaffected (diagnose_fpr.py
+        stayed 0/333). Kept in place because it costs nothing and is a
+        real, published defense, but it is not what closes the 9-category
+        gap for this model -- that gap is reported as an open limitation.
         """
         try:
             q_vec = self.embedder.encode(query)
