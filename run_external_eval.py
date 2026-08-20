@@ -47,16 +47,41 @@ def run():
                          help="Only run the first N samples (fast diagnostic subset). "
                               "eval_set.json is pre-shuffled by build_eval_set.py, so this "
                               "is already a random cross-section of attack categories, not "
-                              "just the first ones built.")
+                              "just the first ones built. With --category set, --limit caps "
+                              "the FILTERED count instead.")
+    # ADDED: a plain --limit N on ~29 roughly-equal categories (~34 each)
+    # gives only N/29 samples per category on average -- too thin to check
+    # a SPECIFIC category's detection rate changed (e.g. after a fix
+    # targeting only certain categories) without a large N. --category lets
+    # you test exactly the categories a change was meant to affect.
+    parser.add_argument("--category", type=str, default=None,
+                         help="Comma-separated attack_category values to run (matches "
+                              "eval_set.json's attack_category field exactly, case-sensitive). "
+                              "e.g. --category \"Business Intelligence,Content Creation,"
+                              "Conversational Agent,Learning and Tutoring,Programming Help,"
+                              "Research Assistance,Task Automation,Information Retrieval,"
+                              "Sentiment Analysis\" runs only the 9 categories with no "
+                              "self-referential injection phrasing (see OUTPUT_HIJACK_PATTERNS' "
+                              "docstring in rule_filter.py).")
     args = parser.parse_args()
     selected_model = resolve_model(args.model)
     suffix = safe_filename(selected_model)
+    if args.category:
+        suffix += "__catfilter"
     if args.limit:
         suffix += f"__subset{args.limit}"
     results_csv_path = SCRIPT_DIR / f"bipia_external_results__{suffix}.csv"
     summary_json_path = SCRIPT_DIR / f"bipia_external_summary__{suffix}.json"
 
     samples = load_eval_set()
+    if args.category:
+        wanted = {c.strip() for c in args.category.split(",")}
+        samples = [s for s in samples if s["attack_category"] in wanted]
+        unknown = wanted - {s["attack_category"] for s in samples}
+        if unknown:
+            print(f"WARNING: no samples matched these --category values "
+                  f"(check spelling/capitalization): {sorted(unknown)}")
+        print(f"Category filter applied: {len(samples)} samples across {len(wanted - unknown)} categories")
     if args.limit:
         samples = samples[:args.limit]
     print(f"Loading SecureRAG ({selected_model})...")
