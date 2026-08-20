@@ -39,13 +39,13 @@ SCRIPT_DIR = Path(__file__).parent
 FPR_SET_PATH = SCRIPT_DIR / "fpr_set.json"
 
 
-def load_fpr_set():
-    if not FPR_SET_PATH.exists():
+def load_fpr_set(path: Path):
+    if not path.exists():
         raise FileNotFoundError(
-            f"{FPR_SET_PATH} not found -- run build_fpr_set.py first and "
-            f"copy the output next to this file."
+            f"{path} not found -- run build_fpr_set.py (or "
+            f"build_fresh_holdout_fpr.py for a --file target) first."
         )
-    return json.load(open(FPR_SET_PATH, encoding="utf-8"))
+    return json.load(open(path, encoding="utf-8"))
 
 
 def run():
@@ -55,15 +55,26 @@ def run():
                          help="Only run the first N samples (fast diagnostic subset).")
     parser.add_argument("--source-type", choices=["email", "table"], default=None,
                          help="Only run samples of this document type.")
+    # ADDED: this was hardcoded to fpr_set.json -- no way to point it at a
+    # different sample file (e.g. build_fresh_holdout_fpr.py's
+    # fpr_set_holdout_seed<N>.json, which has zero overlap with fpr_set.json
+    # and was never used to tune any threshold) without editing the script.
+    parser.add_argument("--file", type=str, default=None,
+                         help="Path to a benign sample JSON file to run instead of "
+                              "fpr_set.json (same schema: id/source_type/combined_query). "
+                              "e.g. --file fpr_set_holdout_seed1.json")
     args = parser.parse_args()
     selected_model = resolve_model(args.model)
+    fpr_path = Path(args.file) if args.file else FPR_SET_PATH
     suffix = safe_filename(selected_model)
+    if args.file:
+        suffix += f"__{fpr_path.stem}"
     if args.limit or args.source_type:
         suffix += f"__subset_{args.source_type or 'all'}{args.limit or ''}"
     results_csv_path = SCRIPT_DIR / f"bipia_external_fpr_results__{suffix}.csv"
     summary_json_path = SCRIPT_DIR / f"bipia_external_fpr_summary__{suffix}.json"
 
-    samples = load_fpr_set()
+    samples = load_fpr_set(fpr_path)
     if args.source_type:
         samples = [s for s in samples if s["source_type"] == args.source_type]
     if args.limit:
