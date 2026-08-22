@@ -31,13 +31,13 @@ SCRIPT_DIR = Path(__file__).parent
 EVAL_SET_PATH = SCRIPT_DIR / "eval_set.json"
 
 
-def load_eval_set():
-    if not EVAL_SET_PATH.exists():
+def load_eval_set(path: Path = EVAL_SET_PATH):
+    if not path.exists():
         raise FileNotFoundError(
-            f"{EVAL_SET_PATH} not found -- run build_eval_set.py first and "
+            f"{path} not found -- run build_eval_set.py first and "
             f"copy the output next to this file."
         )
-    return json.load(open(EVAL_SET_PATH, encoding="utf-8"))
+    return json.load(open(path, encoding="utf-8"))
 
 
 def run():
@@ -63,9 +63,22 @@ def run():
                               "Sentiment Analysis\" runs only the 9 categories with no "
                               "self-referential injection phrasing (see OUTPUT_HIJACK_PATTERNS' "
                               "docstring in rule_filter.py).")
+    # ADDED: this was hardcoded to eval_set.json -- no way to point it at a
+    # different attack/document recombination (e.g. build_eval_set.py --seed 7's
+    # eval_set_seed7.json) without editing the script. Same underlying BIPIA
+    # attack strings either way -- this only lets you check whether the
+    # reported External ASR depends on which document/position each attack
+    # happened to land on in the default eval_set.json.
+    parser.add_argument("--file", type=str, default=None,
+                         help="Path to an eval set JSON file to run instead of "
+                              "eval_set.json (same schema). e.g. "
+                              "--file eval_set_seed7.json")
     args = parser.parse_args()
     selected_model = resolve_model(args.model)
+    eval_path = Path(args.file) if args.file else EVAL_SET_PATH
     suffix = safe_filename(selected_model)
+    if args.file:
+        suffix += f"__{eval_path.stem}"
     if args.category:
         suffix += "__catfilter"
     if args.limit:
@@ -73,7 +86,7 @@ def run():
     results_csv_path = SCRIPT_DIR / f"bipia_external_results__{suffix}.csv"
     summary_json_path = SCRIPT_DIR / f"bipia_external_summary__{suffix}.json"
 
-    samples = load_eval_set()
+    samples = load_eval_set(eval_path)
     if args.category:
         wanted = {c.strip() for c in args.category.split(",")}
         samples = [s for s in samples if s["attack_category"] in wanted]

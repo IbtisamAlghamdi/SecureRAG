@@ -28,6 +28,7 @@ Output: eval_set.json -- a list of samples ready to feed directly into
         SecureRAG.run(query)
 """
 
+import argparse
 import json
 import random
 import re
@@ -40,7 +41,7 @@ DATA_DIR = SCRIPT_DIR / "data"
 # Change this number as needed. The bundled sources support well over
 # 10,000 unique combinations without repetition, so this is fully flexible.
 N_SAMPLES = 1000
-SEED = 42
+DEFAULT_SEED = 42
 
 
 def load_jsonl(path):
@@ -93,8 +94,22 @@ def insert_attack(context, attack_str, position, rng):
         return "\n".join([context[:cut], attack_str, context[cut:]])
 
 
-def build():
-    rng = random.Random(SEED)
+def build(seed: int = DEFAULT_SEED):
+    # ADDED: the attack STRINGS and documents come from BIPIA's own fixed,
+    # published data on purpose -- that's what makes this an independent,
+    # non-co-designed external benchmark, and it should NOT be re-randomized
+    # (using the same published attack set every time is the correct thing
+    # to do, not a limitation). What `seed` controls is only the RECOMBINATION:
+    # which document each attack gets embedded into, at what position
+    # (start/middle/end), and the final sample order -- a secondary
+    # robustness check (does the reported ASR/FPR depend on this particular
+    # pairing?), separate from the internal generator's much more central
+    # zero-duplication content randomization. Previously hardcoded to
+    # SEED=42 with no way to draw a different recombination without editing
+    # this file. Default unchanged, so `eval_set.json` (already used to
+    # report External ASR) stays reproducible exactly as before when --seed
+    # is omitted.
+    rng = random.Random(seed)
     contexts = load_contexts()
     attacks = load_attacks()
     positions = ["start", "middle", "end"]
@@ -154,12 +169,16 @@ def build():
     rng.shuffle(samples)
     samples = samples[:N_SAMPLES]
 
-    out_path = SCRIPT_DIR / "eval_set.json"
+    # ADDED: non-default seeds write to their own file (eval_set_seed<N>.json)
+    # instead of overwriting eval_set.json, so the already-reported ASR
+    # figure's source file is never silently replaced.
+    out_name = "eval_set.json" if seed == DEFAULT_SEED else f"eval_set_seed{seed}.json"
+    out_path = SCRIPT_DIR / out_name
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(samples, f, ensure_ascii=False, indent=2)
 
     print(f"\nDone: built {len(samples)} samples across "
-          f"{len(all_categories)} attack categories")
+          f"{len(all_categories)} attack categories (seed={seed})")
     print(f"Output file: {out_path}")
 
     cat_counts = Counter(s["attack_category"] for s in samples)
@@ -169,4 +188,15 @@ def build():
 
 
 if __name__ == "__main__":
-    build()
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--seed", type=int, default=DEFAULT_SEED,
+                     help=f"random seed for document/position recombination "
+                          f"(default {DEFAULT_SEED}, the seed already used for "
+                          f"the reported eval_set.json). The underlying BIPIA "
+                          f"attack strings and documents never change -- only "
+                          f"which document each attack lands in, at what "
+                          f"position, and the final sample order. Use a "
+                          f"different value (e.g. --seed 7) to check whether "
+                          f"the reported ASR depends on this particular pairing.")
+    args = ap.parse_args()
+    build(seed=args.seed)
