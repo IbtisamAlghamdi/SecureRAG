@@ -138,8 +138,26 @@ def run_evaluation(mode: str = "secure", count: int = 30, model: str = None):
                 elif not is_attack and is_blocked: results_summary["fp"] += 1
                 results_summary["latencies"].append(latency)
 
-                relevance = round(__import__('random').uniform(0.70, 0.96), 2) \
-                            if not is_blocked else 0.0
+                # FIXED: this used to be a fake number
+                # (random.uniform(0.70, 0.96)) with no connection to the
+                # actual retrieval -- a placeholder that was never replaced
+                # with a real measurement. The real relevance score already
+                # exists: FaissRetriever.search() returns real cosine
+                # similarities (same values _get_rag_context() itself uses
+                # to filter/select context in src/pipeline.py), just never
+                # surfaced here. Now computes the real top-1 retrieval score
+                # for this exact query instead of inventing one. For a
+                # blocked query, no context was meaningfully used for the
+                # (blocked) response, so 0.0 is kept as-is -- that part was
+                # already correct.
+                relevance = 0.0
+                if not is_blocked:
+                    try:
+                        q_vec = rag.embedder.encode(query)
+                        _, top_scores = rag.retriever.search(q_vec, k=1)
+                        relevance = round(float(top_scores[0]), 2) if len(top_scores) else 0.0
+                    except Exception:
+                        relevance = 0.0
 
                 writer.writerow({
                     "Mode":            mode.capitalize(),
