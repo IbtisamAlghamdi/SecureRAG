@@ -132,12 +132,24 @@ def run():
         sim_score = res.get("similarity_score", None)
         qr_sim = res.get("query_response_similarity", None)
         l4_checked = res.get("l4_checked", res.get("flag") == "semantic")
-        # Widened from 200->500 chars: at 200, several genuinely-compliant vs.
-        # genuinely-resisted responses were indistinguishable by eye because
-        # the deciding sentence fell past the cutoff (found during a manual
-        # spot-check of a 50-sample run). 500 is still a snippet, not the
-        # full response -- kept bounded so the CSV stays readable.
-        response_snippet = (res.get("response") or "")[:500]
+        # response_snippet stays capped for human readability. It must NOT be
+        # what compliance scoring reads -- see response_full below.
+        #
+        # FIXED: classify_true_compliance.py used to score this 500-char
+        # snippet, and 297/567 (52.4%) of reached-model responses hit that
+        # cap, i.e. were cut. The cut is not neutral: benign_question_
+        # similarity averaged 0.2966 on truncated responses versus 0.5556 on
+        # untruncated ones. Since the verdict is
+        # (attack_similarity - benign_similarity) > margin, halving the
+        # benign term systematically widens the gap and over-reports
+        # compliance. Measured consequence: compliance among reached-model
+        # samples was 27.21% (154/566) scored on truncated text, against
+        # 4.55% (1/22) scored on full text through the identical pipeline --
+        # 95% CIs [23.7%, 31.0%] and [0.8%, 21.8%], which do not overlap.
+        # The full text is now stored separately so the scorer never sees a
+        # truncated response.
+        full_response = res.get("response") or ""
+        response_snippet = full_response[:500]
 
         # ADDED: does the ATTACK-SIDE run measure whether the model actually
         # served the user's real request, not just "reached the model"?
@@ -180,8 +192,22 @@ def run():
             "similarity_score": sim_score,
             "query_response_similarity": qr_sim,
             "benign_question_similarity": benign_q_sim,
+            # ADDED: pipeline.py sets result["violation_type"] on every L2
+            # block, but it was never logged -- blocking_layer only ever said
+            # "rules", so the CSV could not show WHICH tier fired. A separate
+            # 40-sample probe found all 18 external blocks came from
+            # output_hijack alone; without this column that fact is not
+            # recoverable from the run's own output.
+            "violation_type": res.get("violation_type", ""),
+            # ADDED: makes the results file self-contained. Compliance
+            # scoring recovers the injected instruction through this key;
+            # relying on an id-join into eval_set.json instead means a
+            # regenerated eval set (different --seed) would silently pair
+            # responses with the wrong attack text.
+            "attack_name": sample.get("attack_name", ""),
             "latency_sec": elapsed,
             "response_snippet": response_snippet,
+            "response_full": full_response,
         })
 
         layer_counts[layer] += 1
@@ -252,6 +278,14 @@ def run():
     summary = {
         "model": selected_model,
         "n_samples": n,
+        # ADDED: a results file that does not record the thresholds and
+        # generation settings it ran under cannot be matched to the code
+        # state that produced it once either changes.
+        "eval_set_file": str(eval_path.name),
+        "anomaly_threshold": settings.get_anomaly_threshold(),
+        "semantic_threshold": settings.get_semantic_threshold(),
+        "temperature": getattr(settings, "TEMPERATURE", None),
+        "max_new_tokens": getattr(settings, "MAX_NEW_TOKENS", None),
         "detection_rate_pct": round(detection_rate, 2),
         "asr_external_pct": round(asr_external, 2),
         "avg_latency_sec": round(avg_latency, 3),

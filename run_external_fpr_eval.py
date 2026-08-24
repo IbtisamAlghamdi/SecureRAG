@@ -113,7 +113,8 @@ def run():
         sim_score = res.get("similarity_score", None)
         qr_sim = res.get("query_response_similarity", None)
         l4_checked = res.get("l4_checked", res.get("flag") == "semantic")
-        response_snippet = (res.get("response") or "")[:200]
+        full_response = res.get("response") or ""
+        response_snippet = full_response[:500]
 
         results.append({
             "id": sample["id"],
@@ -126,8 +127,15 @@ def run():
             "l4_checked": l4_checked,
             "similarity_score": sim_score,
             "query_response_similarity": qr_sim,
+            # ADDED (mirrors run_external_eval.py): which L2 tier fired, and
+            # the untruncated response. The FPR figure itself does not depend
+            # on either -- blocking happens inside the pipeline on the full
+            # text -- but without them a false positive cannot be diagnosed
+            # from this file alone.
+            "violation_type": res.get("violation_type", ""),
             "latency_sec": elapsed,
             "response_snippet": response_snippet,
+            "response_full": full_response,
         })
 
         layer_counts[layer] += 1
@@ -173,6 +181,11 @@ def run():
     summary = {
         "model": selected_model,
         "n_samples": n,
+        "benign_set_file": str(fpr_path.name),
+        "anomaly_threshold": settings.get_anomaly_threshold(),
+        "semantic_threshold": settings.get_semantic_threshold(),
+        "temperature": getattr(settings, "TEMPERATURE", None),
+        "max_new_tokens": getattr(settings, "MAX_NEW_TOKENS", None),
         "false_positive_rate_pct": round(fpr, 2),
         "false_positive_count": total_false_positives,
         "avg_latency_sec": round(avg_latency, 3),
