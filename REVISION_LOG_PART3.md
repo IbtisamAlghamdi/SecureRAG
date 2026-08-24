@@ -8,7 +8,8 @@ Part 1 covers the starting point, L0 and L1. Part 2 covers L2, L3 and L4.
 
 **Status of the numbers:** every figure below came from a real run of this code or was reproduced during
 the writing of these documents. Two findings in this document (§7.4 and §12.2) were measured *while
-writing it* and are flagged as such, including one that corrects an earlier hypothesis.
+writing it* and are flagged as such, including one that corrects an earlier hypothesis. §12.5 was
+rewritten after a second model's full evaluation completed.
 
 ---
 
@@ -484,9 +485,14 @@ the repository so the finding is reproducible.
 
 ## 11. Final results
 
-**Model:** Mistral-7B-Instruct v0.2 (Q4_K_M GGUF) · **Corpus:** 308 files / 3,804 chunks
+**Primary model:** Mistral-7B-Instruct v0.2 (Q4_K_M GGUF) · **Corpus:** 308 files / 3,804 chunks
 **Code state:** frozen — all five seeds ran against identical code (last commit before the run:
 `816f092`, 2026-08-20 15:19; run completed 2026-08-22 04:57; `git status` clean throughout).
+
+> **Second model.** A complete five-seed internal evaluation of **Llama-3.2-3B-Instruct** has also been
+> run, against the same frozen code, the same five seeds, and the same corpus (completed 2026-08-24
+> 08:10). Its results, the cross-model comparison, and what they show about the layer architecture are in
+> **§12.5**. The tables in this section are Mistral-7B unless stated otherwise.
 
 ### 11.1 Five-seed internal evaluation
 
@@ -786,17 +792,89 @@ framework's channel-separation design — but it **does not close the gap it tar
 the negative result is recorded in the code comment rather than left implying a fix that was never
 achieved. Whether it works on other models is untested.
 
-### 12.5 Single-model evaluation
+### 12.5 Cross-model validation — resolved for two models, open for the third
 
-**Status:** open.
+**Status:** substantially addressed. Two of three supported models evaluated in full.
 
-All reported results are for **Mistral-7B-Instruct v0.2** only. The project supports three models
-(`Mistral-7B`, `Llama-3.2-3B`, `Phi-3.5-Mini`) and every evaluation script accepts `--model`, writing to
-per-model output paths so no cross-contamination is possible.
+All results were initially produced for **Mistral-7B-Instruct v0.2** only. A complete five-seed internal
+evaluation of **Llama-3.2-3B-Instruct** has since been run against identical code, identical seeds
+(42, 137, 271, 413, 509), and the identical corpus (308 files / 3,804 chunks).
 
-L4 depends on the model's **response**, so its behaviour is the most likely to vary across models. The
-border-string result (§12.4) is explicitly model-specific. A second model's evaluation is prepared but not
-yet run.
+| Metric | Mistral-7B | Llama-3.2-3B |
+|---|---|---|
+| Internal ASR | 9.77 % ± 1.08 % | **10.33 % ± 0.88 %** |
+| Internal FPR | 0.12 % ± 0.16 % | **0.06 % ± 0.13 %** |
+| Mean latency | 6.896 s ± 0.483 s | **1.170 s ± 0.058 s** |
+| Latency reduction vs. undefended | 61.3 % | **75.8 %** |
+| Wilson 95 % CI (FPR) | [0.05 %, 1.68 %] | [0.05 %, 1.68 %] |
+| McNemar χ² | 901.0, *p* < 0.001 | 895.0, *p* < 0.001 |
+| Wall-clock runtime | ~31 h | 6 h 14 m |
+
+The ASR ranges overlap substantially (Mistral [8.69, 10.85] vs. Llama [9.45, 11.21]), so the difference is
+not statistically meaningful. Llama's FPR is lower (1 false positive across 5 runs vs. 2) and its standard
+deviation is tighter on both metrics.
+
+#### The architecture separates cleanly, and the data shows it
+
+The ablation study returned **numerically identical** results for the first four configurations across
+both models:
+
+| Configuration | Mistral-7B | Llama-3.2-3B |
+|---|---|---|
+| L0 only | 100.00 % | **100.00 %** |
+| L0+L1 | 84.22 % | **84.22 %** |
+| L0+L1+L2 | 12.29 % | **12.29 %** |
+| L0+L1+L2+L3 | 9.89 % | **9.89 %** |
+
+This is expected and is a **positive validation result**, not a coincidence: L0–L3 inspect only the
+*input*, never the model's output, and the ablation uses a fixed seed (42), so identical inputs must
+produce identical blocking decisions regardless of which LLM is loaded. Reproducing that exactly across
+two architectures of different size confirms the layer separation is implemented as designed.
+
+Per-category detection reinforces the same point:
+
+| Attack tier | Mistral-7B | Llama-3.2-3B | Difference |
+|---|---|---|---|
+| Context poisoning | 100.0 % | 100.0 % | **identical** |
+| Token smuggling | 99.7 % | 99.7 % | **identical** |
+| Psychological manipulation | 96.4 % | 96.4 % | **identical** |
+| Nested hiding | 88.0 % | 88.0 % | **identical** |
+| Conversational drift | 99.8 % | 99.3 % | −0.5 |
+| Indirect poisoning | 98.0 % | 97.9 % | −0.1 |
+| Trust escalation | 96.6 % | 95.7 % | −0.9 |
+| **Semantic camouflage** | **40.9 %** | **37.2 %** | **−3.7** |
+
+Four of eight tiers match to one decimal place, and the maximum divergence outside `semantic_camouflage`
+is **0.9 points**. The tiers that match are precisely those caught almost entirely at L1/L2 — the
+model-independent layers.
+
+#### L4's contribution is model-dependent, and now quantified
+
+`semantic_camouflage` is the only tier that depends substantially on L4, because L2 deliberately does not
+target it (Part 2 §4.3). It is therefore the only tier where model choice matters — and it is exactly
+where the two models diverge:
+
+| | L0–L3 alone (model-independent) | Final | L4's contribution |
+|---|---|---|---|
+| Mistral-7B | 35.5 % | 40.9 % | **+5.4 points** |
+| Llama-3.2-3B | 35.5 % | 37.2 % | **+1.7 points** |
+
+Measured the same way on the whole attack set (seed 42, like-for-like against the L0+L1+L2+L3 row):
+
+| Model | Blocked without L4 | Blocked with L4 | L4 recovers |
+|---|---|---|---|
+| Mistral-7B | 902 / 1001 | 912 / 1001 | **+10 attacks** |
+| Llama-3.2-3B | 902 / 1001 | 906 / 1001 | **+4 attacks** |
+
+**L4 is roughly 2.5× more effective on Mistral-7B than on Llama-3.2-3B.** This is the concrete form of the
+model-dependence anticipated when L4 was introduced: it inspects the model's *response*, so its yield
+varies with how that model phrases refusals and compliance. The entire measurable difference between the
+two models' end-to-end results is concentrated in this one layer.
+
+**Remaining gap:** `Phi-3.5-Mini` is supported (`model_select.py`) but not yet evaluated. External BIPIA
+validation has so far been run for Mistral-7B only; the Llama external run is prepared but not complete.
+Every evaluation script takes `--model` and writes to per-model output paths, so no cross-contamination
+between model results is possible.
 
 ### 12.6 `classify_true_compliance.py` is a measurement, not a judge
 
@@ -825,12 +903,13 @@ Coverage is now 566/566 (100 %) of reached-model rows, so the earlier partial-co
 | Corpus | 306 files, encyclopedic only | **308 files / 3,804 chunks**, + emails + financial |
 | Internal ASR | 8.96 % (single run, n_eff = 80) | **9.77 % ± 1.08 %** (5 seeds, n_eff = 1,455) |
 | Internal FPR | 0.00 % (unmeasurable by construction) | **0.12 % ± 0.16 %**, Wilson [0.05 %, 1.68 %] |
+| Models evaluated | 1 (single run) | **2 × 5 seeds** — Mistral-7B and Llama-3.2-3B, identical code and seeds |
 | External validation | none | **BIPIA: 986 attacks + 333 benign + fresh holdout + 300 human queries** |
 | External ASR | — | **57.40 % reach-rate → 15.62 % true compliance** |
 | External FPR | 68.47 % (first measurement) | **1.80 %**, all six diagnosed |
 | Pre-L4 coverage | 75.9 % | **88.0 %** |
 
-**Open limitations:** 6, each with root cause identified. Two carry validated patches held back
+**Open limitations:** 6, each with root cause identified (one, single-model evaluation, now substantially addressed by the second model — §12.5). Two carry validated patches held back
 deliberately to preserve code/result consistency. One fix was tested and rejected on evidence. One
 published external defense was tested and reported negative.
 
