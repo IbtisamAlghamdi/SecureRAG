@@ -96,8 +96,12 @@ python3 thesis_evaluation.py
 ### 8. Generate charts
 
 ```bash
-python3 generate_charts.py
+python3 generate_final_charts.py --model Mistral-7B
 ```
+
+Reads the real result files (`thesis_results.json`, the BIPIA summaries, the compliance CSV) and writes
+every chart to `final_charts/<model>/`. A chart whose input file is missing is skipped with a message,
+never filled in with a placeholder value.
 
 ### 9. (No model needed) Verify the L0 fix + the dynamic benign generator
 
@@ -130,8 +134,8 @@ python3 compare_chart.py         # internal vs external bar chart
 SecureRAG_Fixed/
 ├── chat.py                        <- Interactive chat interface
 ├── thesis_evaluation.py          <- Full academic evaluation (1,334 queries, 5 runs)
-├── test_scenarios.py             <- Scenario-based evaluation
-├── generate_charts.py             <- Generate thesis charts
+├── generate_final_charts.py       <- Build all charts from the real result files
+├── measure_layer_effectiveness.py <- Per-query measurement of which layer blocked what
 ├── download_datasets.py          <- Download BEIR/NQ datasets
 ├── download_models.py            <- Download model files
 ├── verify_no_model.py            <- L0/L1/L2/L3 regression check, no model needed
