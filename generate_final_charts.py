@@ -334,6 +334,212 @@ def chart_internal_vs_external_fpr(thesis, ext_fpr_summary, out_dir):
     savefig(fig, out_dir, "08_internal_vs_external_FPR.png")
 
 
+
+# ─────────────────────────────────────────────────────────────────────────
+# CROSS-MODEL CHARTS (--compare). Each reads two models' real output files
+# and skips with a message if either side is missing -- never substitutes a
+# placeholder value.
+# ─────────────────────────────────────────────────────────────────────────
+
+def _mstats(t):
+    fe = t["full_evaluation"]
+    return fe["ASR_mean"], fe["ASR_std"], fe["FPR_mean"], fe["FPR_std"], fe["Lat_mean"], fe["Lat_std"]
+
+
+def chart_cmp_internal(models, out_dir):
+    """09 -- internal ASR / FPR / latency side by side, with error bars."""
+    names = list(models)
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5.2))
+    fig.suptitle("Internal evaluation across models (5 seeds each, identical code and seeds)",
+                 fontweight="bold", fontsize=13)
+    metrics = [("Attack Success Rate (%)", 0, 1, C_DANGER, "Lower is better ↓"),
+               ("False Positive Rate (%)", 2, 3, C_SAFE, "Lower is better ↓"),
+               ("Mean latency (s)", 4, 5, C_NEUTRAL, "Lower is better ↓")]
+    for ax, (title, mi, si, colour, sub) in zip(axes, metrics):
+        vals = [_mstats(models[n])[mi] for n in names]
+        errs = [_mstats(models[n])[si] for n in names]
+        ax.bar(names, vals, yerr=errs, capsize=6, color=colour, alpha=0.85)
+        for i, (v, e) in enumerate(zip(vals, errs)):
+            ax.text(i, v + e + max(vals) * 0.04, f"{v:.2f}", ha="center",
+                    fontweight="bold", fontsize=11)
+        ax.set_title(f"{title}\n{sub}", fontweight="bold")
+        ax.set_ylim(0, max(v + e for v, e in zip(vals, errs)) * 1.28)
+    plt.tight_layout()
+    savefig(fig, out_dir, "09_cross_model_internal.png")
+
+
+def chart_cmp_external(models, ext, ext_fpr, comp, out_dir):
+    """10 -- external detection / reach-rate ASR / true-compliance ASR / FPR."""
+    names = [n for n in models if ext.get(n)]
+    if len(names) < 2:
+        print("  skip 10_cross_model_external.png -- need external summaries for two models")
+        return
+    det = [ext[n]["detection_rate_pct"] for n in names]
+    reach = [ext[n]["asr_external_pct"] for n in names]
+    true_asr, fpr = [], []
+    for n in names:
+        rows = comp.get(n)
+        nt = ext[n]["n_samples"]
+        true_asr.append(100 * sum(1 for r in rows if r.get("verdict") == "likely_complied") / nt
+                        if rows else None)
+        fpr.append(ext_fpr[n]["false_positive_rate_pct"] if ext_fpr.get(n) else None)
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5.5))
+    fig.suptitle("External validation across models — BIPIA (Microsoft), 986 attacks each",
+                 fontweight="bold", fontsize=13)
+    x = np.arange(len(names)); w = 0.26
+    ax = axes[0]
+    ax.bar(x - w, det, w, label="Detection rate", color=C_SAFE)
+    ax.bar(x, reach, w, label="ASR (reached model)", color="#d98c6b")
+    if all(v is not None for v in true_asr):
+        ax.bar(x + w, true_asr, w, label="ASR (true compliance)", color=C_DANGER)
+    for i, trio in enumerate(zip(det, reach, true_asr)):
+        for off, v in zip((-w, 0, w), trio):
+            if v is not None:
+                ax.text(i + off, v + 1.5, f"{v:.1f}", ha="center", fontsize=9, fontweight="bold")
+    ax.set_xticks(x); ax.set_xticklabels(names)
+    ax.set_ylabel("%"); ax.set_title("Attack side", fontweight="bold")
+    ax.legend(fontsize=9); ax.set_ylim(0, 70)
+
+    ax = axes[1]
+    if all(v is not None for v in fpr):
+        ax.bar(names, fpr, color=C_SAFE, alpha=0.85, width=0.45)
+        for i, v in enumerate(fpr):
+            ax.text(i, v + max(fpr) * 0.04, f"{v:.2f}%", ha="center", fontweight="bold", fontsize=12)
+        ax.set_ylim(0, max(fpr) * 1.3)
+    ax.set_ylabel("False positive rate (%)")
+    ax.set_title("Benign side (333 clean BIPIA documents)", fontweight="bold")
+    plt.tight_layout()
+    savefig(fig, out_dir, "10_cross_model_external.png")
+
+
+def chart_cmp_layers(models, ext, ext_fpr, out_dir):
+    """11 -- the architectural result: every cross-model difference sits in L4.
+    Counts come from each run's own layer_distribution, not from any
+    derived quantity."""
+    names = [n for n in models if ext.get(n) and ext_fpr.get(n)]
+    if len(names) < 2:
+        print("  skip 11_cross_model_layers.png -- need external + FPR summaries for two models")
+        return
+    keymap = {"rules": "L2 rules", "anomaly": "L3 anomaly", "semantic": "L4 semantic"}
+    order = list(keymap)
+    atk = {n: [ext[n]["layer_distribution"].get(k, 0) for k in order] for n in names}
+    ben = {n: [ext_fpr[n]["layer_distribution"].get(k, 0) for k in order] for n in names}
+
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5.5))
+    fig.suptitle("Where the two models differ: only L4 — every other layer is identical",
+                 fontweight="bold", fontsize=13)
+    for ax, data, title, ylab in [
+            (axes[0], atk, "Attacks blocked (986 samples)", "attacks blocked"),
+            (axes[1], ben, "False positives (333 benign samples)", "benign wrongly blocked")]:
+        x = np.arange(len(order)); w = 0.35
+        for i, n in enumerate(names):
+            bars = ax.bar(x + (i - 0.5) * w, data[n], w, label=n,
+                          color=[C_NEUTRAL, C_ACCENT][i % 2], alpha=0.9)
+            for b, v in zip(bars, data[n]):
+                ax.text(b.get_x() + b.get_width() / 2, v + max(max(data.values(), key=max)) * 0.02,
+                        str(v), ha="center", fontsize=9, fontweight="bold")
+        for j, k in enumerate(order):
+            vals = [data[n][j] for n in names]
+            if len(set(vals)) == 1:
+                ax.text(j, -max(max(data.values(), key=max)) * 0.09, "identical",
+                        ha="center", fontsize=9, style="italic", color=C_SAFE, fontweight="bold")
+        ax.set_xticks(x); ax.set_xticklabels([keymap[k] for k in order])
+        ax.set_ylabel(ylab); ax.set_title(title, fontweight="bold")
+        ax.legend(fontsize=9)
+    plt.tight_layout()
+    savefig(fig, out_dir, "11_cross_model_layers.png")
+
+
+def chart_cmp_categories(models, out_dir):
+    """12 -- internal per-tier detection, both models on one axis."""
+    names = list(models)
+    cats = sorted(models[names[0]]["full_evaluation"]["per_cat_avg"])
+    fig, ax = plt.subplots(figsize=(13, 6))
+    x = np.arange(len(cats)); w = 0.35
+    for i, n in enumerate(names):
+        pc = models[n]["full_evaluation"]["per_cat_avg"]
+        v = [pc[c]["DR_mean"] for c in cats]
+        e = [pc[c]["DR_std"] for c in cats]
+        ax.bar(x + (i - 0.5) * w, v, w, yerr=e, capsize=3, label=n,
+               color=[C_SAFE, C_NEUTRAL][i % 2], alpha=0.9)
+    ax.axhline(80, ls="--", color="gray", alpha=0.6)
+    ax.set_xticks(x); ax.set_xticklabels(cats, rotation=20, ha="right")
+    ax.set_ylabel("Detection rate (%)")
+    ax.set_title("Detection by attack tier, both models (mean ± std over 5 seeds)",
+                 fontweight="bold")
+    ax.legend()
+    plt.tight_layout()
+    savefig(fig, out_dir, "12_cross_model_by_category.png")
+
+
+def chart_cmp_compliance(models, ext, comp, out_dir):
+    """13 -- what actually happened to all 986 attacks, per model."""
+    names = [n for n in models if comp.get(n) and ext.get(n)]
+    if not names:
+        print("  skip 13_compliance_breakdown.png -- need compliance CSVs")
+        return
+    fig, ax = plt.subplots(figsize=(11, 5.5))
+    labels = ["blocked before model", "reached, resisted", "reached, ambiguous", "reached, complied"]
+    colours = [C_SAFE, "#8fbf9f", "#d9c26b", C_DANGER]
+    bottoms = np.zeros(len(names))
+    parts = []
+    for n in names:
+        rows = comp[n]; tot = ext[n]["n_samples"]
+        c = sum(1 for r in rows if r.get("verdict") == "likely_complied")
+        r_ = sum(1 for r in rows if r.get("verdict") == "likely_resisted")
+        a = sum(1 for r in rows if r.get("verdict") == "ambiguous")
+        parts.append([tot - (c + r_ + a), r_, a, c])
+    parts = np.array(parts, dtype=float)
+    tots = np.array([ext[n]["n_samples"] for n in names], dtype=float)
+    for j, (lab, col) in enumerate(zip(labels, colours)):
+        vals = 100 * parts[:, j] / tots
+        ax.barh(names, vals, left=bottoms, color=col, label=lab, height=0.5)
+        for i, v in enumerate(vals):
+            if v > 3:
+                ax.text(bottoms[i] + v / 2, i, f"{v:.1f}%", ha="center", va="center",
+                        fontsize=10, fontweight="bold",
+                        color="white" if j in (0, 3) else "black")
+        bottoms += vals
+    ax.set_xlim(0, 100); ax.set_xlabel("share of all 986 external attacks (%)")
+    ax.set_title("What happened to every external attack", fontweight="bold")
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.16), ncol=4, fontsize=9)
+    plt.tight_layout()
+    savefig(fig, out_dir, "13_compliance_breakdown.png")
+
+
+def chart_cmp_margin(models, ext, comp, out_dir):
+    """14 -- margin sensitivity, recomputed from each compliance CSV. Shows
+    how far the reported compliance figure depends on the tie-break margin,
+    which is the honest way to present an uncalibrated parameter."""
+    names = [n for n in models if comp.get(n) and ext.get(n)]
+    if not names:
+        print("  skip 14_margin_sensitivity.png -- need compliance CSVs")
+        return
+    margins = [0.0, 0.02, 0.05, 0.10, 0.15, 0.20]
+    fig, ax = plt.subplots(figsize=(9, 5.5))
+    for i, n in enumerate(names):
+        rows = comp[n]; tot = ext[n]["n_samples"]
+        gaps = [float(r["attack_similarity"]) - float(r["benign_similarity"]) for r in rows]
+        ys = [100 * sum(1 for g in gaps if g > m) / tot for m in margins]
+        ax.plot(margins, ys, "o-", linewidth=2, label=n,
+                color=[C_DANGER, C_ACCENT][i % 2])
+        for m, y in zip(margins, ys):
+            ax.annotate(f"{y:.1f}", (m, y), textcoords="offset points",
+                        xytext=(0, 8), ha="center", fontsize=8)
+        spread = max(ys) - min(ys)
+        ax.plot([], [], " ", label=f"    spread: {spread:.1f} pts")
+    ax.axvline(0.05, ls=":", color="gray", alpha=0.7)
+    ax.annotate("reported margin (0.05)", xy=(0.05, ax.get_ylim()[1] * 0.95),
+                fontsize=8, color="gray", rotation=90, va="top")
+    ax.set_xlabel("classification margin"); ax.set_ylabel("true-compliance ASR (%)")
+    ax.set_title("How much the compliance figure depends on the margin\n"
+                 "(a flat line means the number is robust)", fontweight="bold")
+    ax.legend(fontsize=9)
+    plt.tight_layout()
+    savefig(fig, out_dir, "14_margin_sensitivity.png")
+
+
 def run():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--model", required=True, help="e.g. Mistral-7B -- used to build default file paths")
@@ -348,6 +554,12 @@ def run():
                           "back to deriving marginal contribution from the "
                           "ablation study instead, clearly labeled either way.")
     ap.add_argument("--out-dir", default=None)
+    ap.add_argument("--compare", nargs="+", metavar="MODEL", default=None,
+                     help="Also build cross-model comparison charts (09-14) for these "
+                          "models, e.g. --compare Mistral-7B Llama-3.2-3B. Each model's "
+                          "files are located by the same naming convention used above. "
+                          "Charts whose inputs are missing for either model are skipped "
+                          "with a message, never filled with a placeholder.")
     args = ap.parse_args()
 
     m = args.model
@@ -385,7 +597,34 @@ def run():
     chart_internal_vs_external_asr(thesis, ext_summary, compliance_rows, out_dir)
     chart_internal_vs_external_fpr(thesis, ext_fpr_summary, out_dir)
 
-    print(f"\nDone. All charts for {m} are in: {out_dir}/")
+    print(f"\nDone. Per-model charts for {m} are in: {out_dir}/")
+
+    # ── cross-model comparison ────────────────────────────────────────────
+    if args.compare:
+        cmp_dir = "final_charts/comparison"
+        os.makedirs(cmp_dir, exist_ok=True)
+        print(f"\n{'='*62}\nCross-model comparison: {', '.join(args.compare)}\n{'='*62}")
+        models, ext_all, extf_all, comp_all = {}, {}, {}, {}
+        for name in args.compare:
+            t = load_json(f"outputs/thesis_v2/{name}/thesis_results.json")
+            if t is None:
+                print(f"  ERROR: no thesis_results.json for {name} -- comparison skipped.")
+                return
+            models[name] = t
+            ext_all[name] = load_json(f"bipia_external_summary__{name}.json")
+            extf_all[name] = load_json(f"bipia_external_fpr_summary__{name}.json")
+            comp_all[name] = load_compliance_csv(f"compliance_classified__{name}.csv")
+            print(f"  {name:16s} internal ✓  external {'✓' if ext_all[name] else '✗'}"
+                  f"  ext-FPR {'✓' if extf_all[name] else '✗'}"
+                  f"  compliance {'✓' if comp_all[name] else '✗'}")
+        print()
+        chart_cmp_internal(models, cmp_dir)
+        chart_cmp_external(models, ext_all, extf_all, comp_all, cmp_dir)
+        chart_cmp_layers(models, ext_all, extf_all, cmp_dir)
+        chart_cmp_categories(models, cmp_dir)
+        chart_cmp_compliance(models, ext_all, comp_all, cmp_dir)
+        chart_cmp_margin(models, ext_all, comp_all, cmp_dir)
+        print(f"\nDone. Comparison charts are in: {cmp_dir}/")
 
 
 if __name__ == "__main__":
