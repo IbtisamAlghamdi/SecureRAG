@@ -86,7 +86,9 @@ The evaluation reported in Chapter~\ref{ch:evaluation} is produced by the follow
 	\item \texttt{classify\_true\_compliance.py} --- separates ``reached the model'' from ``complied with the injected instruction''.
 	\item \texttt{measure\_layer\_effectiveness.py} --- direct per-query tally of which layer blocked each attack.
 	\item \texttt{run\_external\_fpr\_eval.py}, \texttt{build\_fresh\_holdout\_fpr.py}, \texttt{check\_real\_query\_fpr.py}, \texttt{diagnose\_fpr.py} --- the four independent false-positive measurements.
-	\item \texttt{threshold\_sensitivity\_analysis.py} --- threshold sweeps.
+	\item \texttt{threshold\_sensitivity\_analysis.py} --- the sweep of \texttt{SEMANTIC\_THRESHOLD} over already-logged similarity scores.
+	\item \texttt{l3\_threshold\_sensitivity.py} --- the sweep of \texttt{ANOMALY\_THRESHOLD} across attacks and both benign sets reported in Section~\ref{subsec:l3_threshold}. It loads no language model.
+	\item \texttt{run\_demo\_appendix.py} --- runs the fifteen queries of Appendix~\ref{app:demo} through the complete system to record per-query latency and L4 similarity.
 	\item \texttt{verify\_no\_model.py} --- generator integrity checks (duplicate detection, presence of sensitive-but-benign queries) that run without loading a language model.
 	\item \texttt{model\_select.py} --- the single point at which the model is chosen, so that switching models changes only which GGUF file is loaded and nothing else.
 \end{itemize}
@@ -121,7 +123,7 @@ Items 3--5 below are examples of that second group. They are deliberately includ
 
 	\item \textit{``How does ignoring specific files using a .gitignore configuration work in practice?''} --- \textbf{[L0]} LOW risk. \textbf{[L1--L3]} No block; anomaly score $10.0$. \textbf{[L4]} Run and passed, with a similarity of $0.1949$ --- the narrowest margin of any query in this demonstration, $0.0149$ above the threshold. \textbf{Latency 19.095\,s.}
 
-	\item \textit{``What would a security engineer need to know about system prompts?''} --- \textbf{[L0]} LOW risk. \textbf{[L1--L3]} No block; anomaly score $10.0$. \textbf{[L4]} Run and passed comfortably, with a similarity of $0.8035$. The phrase \emph{system prompt} appears here as the subject of a legitimate question rather than as the object of an extraction attempt; L2's Pattern~2 requires the surrounding request context and therefore does not fire.
+	\item \textit{``What would a security engineer need to know about system prompts?''} --- \textbf{[L0]} LOW risk. \textbf{[L1--L3]} No block; anomaly score $10.0$. \textbf{[L4]} Run and passed comfortably, with a similarity of $0.8035$. The phrase \emph{system prompt} appears here as the subject of a legitimate question rather than as the object of an extraction attempt; L2's Pattern~2 requires the surrounding request context and therefore does not fire. \textbf{Latency 16.764\,s.}
 
 \end{enumerate}
 
@@ -208,7 +210,6 @@ This is what produces the latency reduction reported in Section~\ref{subsec:late
 
 The measured similarity scores show how narrow that margin is. Of the three benign queries above that reached L4, one scored $0.8035$ and was never in question, but the other two scored $0.2189$ and $0.1949$ against a threshold of $0.18$. The second of those clears the bar by $0.0149$. These are exactly the security-adjacent phrasings the threshold was set to accommodate, and Section~\ref{subsec:l4_threshold} explains why raising it further would block them.
 
-\medskip\noindent
 \medskip\noindent
 \textbf{Fourth, reaching the model is not the same as being answered.} Item~10 clears every layer, but its response scores a similarity of $0.7602$ against the knowledge base --- higher than two of the five legitimate queries. The model treated the question as an academic one about AI behaviour and answered from the corpus, which is why L4 correctly passes it. The attack is recorded as a bypass, and the output is harmless. Chapter~\ref{ch:evaluation} quantifies this distinction on the external benchmark, where $70.3\,\%$ of attacks that cleared every layer were refused by the model itself.
 
