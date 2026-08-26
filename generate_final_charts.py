@@ -212,6 +212,20 @@ def chart_layer_effectiveness(thesis, out_dir, layer_measurement=None):
 
     if layer_measurement is not None:
         c = layer_measurement["layer_counts"]
+        # Guard against a JSON written by the buggy first version of
+        # measure_layer_effectiveness.py, whose LAYER_BUCKETS matched only the
+        # literal "rules" and swept every rules_<violation_type> variant into
+        # "other" -- under-reporting L2 by 488 blocks on the Mistral-7B run.
+        # Such a file must not be drawn silently; re-bucket it first (no
+        # re-run needed, the raw per-query tallies are stored in the file).
+        if c.get("other"):
+            raise SystemExit(
+                f"\n  05_layer_effectiveness: this measurement JSON has "
+                f"other={c['other']} unbucketed blocks -- it was produced by the "
+                f"old, buggy bucketing and its L2 figure is wrong.\n"
+                f"  Fix it without re-running the model:\n"
+                f"      python3 measure_layer_effectiveness.py --from-json <that file>.json\n"
+                f"  then re-run this script.")
         deltas = [c["L1"], c["L2"], c["L3"], c["L4"]]
         subtitle = (f"direct per-query measurement, seed={layer_measurement['seed']}, "
                     f"n={layer_measurement['n_attacks']} -- measure_layer_effectiveness.py")
