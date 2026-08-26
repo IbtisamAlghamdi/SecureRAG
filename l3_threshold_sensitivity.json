@@ -1,0 +1,121 @@
+{
+  "seeds": [
+    42,
+    137,
+    271,
+    413,
+    509
+  ],
+  "n_attacks": 5005,
+  "n_benign": 1665,
+  "rows": [
+    {
+      "threshold": 5.0,
+      "detection": 93.32667332667333,
+      "l3_blocks": 323,
+      "fpr": 4.384384384384385,
+      "fp_l3": 73,
+      "blocked": 4671,
+      "fp": 73,
+      "ext_fpr": 91.29129129129129,
+      "ext_fp": 304,
+      "ext_fp_l3": 304
+    },
+    {
+      "threshold": 7.5,
+      "detection": 92.22777222777223,
+      "l3_blocks": 268,
+      "fpr": 0.0,
+      "fp_l3": 0,
+      "blocked": 4616,
+      "fp": 0,
+      "ext_fpr": 84.68468468468468,
+      "ext_fp": 282,
+      "ext_fp_l3": 282
+    },
+    {
+      "threshold": 10.0,
+      "detection": 90.68931068931069,
+      "l3_blocks": 191,
+      "fpr": 0.0,
+      "fp_l3": 0,
+      "blocked": 4539,
+      "fp": 0,
+      "ext_fpr": 57.05705705705706,
+      "ext_fp": 190,
+      "ext_fp_l3": 190
+    },
+    {
+      "threshold": 12.5,
+      "detection": 89.67032967032966,
+      "l3_blocks": 140,
+      "fpr": 0.0,
+      "fp_l3": 0,
+      "blocked": 4488,
+      "fp": 0,
+      "ext_fpr": 14.114114114114114,
+      "ext_fp": 47,
+      "ext_fp_l3": 47
+    },
+    {
+      "threshold": 15.0,
+      "detection": 89.37062937062937,
+      "l3_blocks": 125,
+      "fpr": 0.0,
+      "fp_l3": 0,
+      "blocked": 4473,
+      "fp": 0,
+      "ext_fpr": 1.8018018018018018,
+      "ext_fp": 6,
+      "ext_fp_l3": 6
+    },
+    {
+      "threshold": 17.5,
+      "detection": 87.77222777222777,
+      "l3_blocks": 45,
+      "fpr": 0.0,
+      "fp_l3": 0,
+      "blocked": 4393,
+      "fp": 0,
+      "ext_fpr": 0.0,
+      "ext_fp": 0,
+      "ext_fp_l3": 0
+    },
+    {
+      "threshold": 20.0,
+      "detection": 87.4925074925075,
+      "l3_blocks": 31,
+      "fpr": 0.0,
+      "fp_l3": 0,
+      "blocked": 4379,
+      "fp": 0,
+      "ext_fpr": 0.0,
+      "ext_fp": 0,
+      "ext_fp_l3": 0
+    },
+    {
+      "threshold": 25.0,
+      "detection": 87.21278721278722,
+      "l3_blocks": 17,
+      "fpr": 0.0,
+      "fp_l3": 0,
+      "blocked": 4365,
+      "fp": 0,
+      "ext_fpr": 0.0,
+      "ext_fp": 0,
+      "ext_fp_l3": 0
+    },
+    {
+      "threshold": 30.0,
+      "detection": 87.01298701298701,
+      "l3_blocks": 7,
+      "fpr": 0.0,
+      "fp_l3": 0,
+      "blocked": 4355,
+      "fp": 0,
+      "ext_fpr": 0.0,
+      "ext_fp": 0,
+      "ext_fp_l3": 0
+    }
+  ]
+}

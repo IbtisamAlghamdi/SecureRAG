@@ -1,0 +1,104 @@
+% ============================================================================
+%  Threshold selection and sensitivity — drop-in section for the framework or
+%  methodology chapter. Answers the reviewer point that threshold choices are
+%  insufficiently justified and unaccompanied by a sensitivity analysis.
+%
+%  PROVENANCE
+%  - Table \ref{tab:l3_sweep} was produced by l3_threshold_sensitivity.py on
+%    5 seeds (5,005 attacks, 1,665 internal benign) plus the 333-document
+%    BIPIA benign set. It needs no language model, so it is reproducible.
+%  - The L4 figures come from threshold_sensitivity_analysis.py and
+%    diagnose_fpr.py, recorded in src/config/settings.py.
+%  - Numbers stated as NOT derived are stated that way deliberately.
+% ============================================================================
+
+\section{Threshold Selection and Sensitivity}
+\label{sec:thresholds}
+
+Four numeric parameters govern the framework's blocking behaviour. They are set out together here, with the evidence for each, because a defense whose thresholds are unjustified is not reproducible and its reported rates cannot be interpreted.
+
+\begin{table}[h]
+\centering
+\caption{The framework's numeric parameters and the basis for each.}
+\label{tab:thresholds}
+\begin{tabular}{llp{6.1cm}}
+\toprule
+\textbf{Parameter} & \textbf{Value} & \textbf{Basis} \\
+\midrule
+\texttt{ANOMALY\_THRESHOLD} (L3) & $15.0$ & Two-sided sweep over attacks and both benign sets (Section~\ref{subsec:l3_threshold}) \\
+\texttt{SEMANTIC\_THRESHOLD} (L4) & $0.18$ & Two-sided sweep, bounded below by measured internal scores (Section~\ref{subsec:l4_threshold}) \\
+L0 risk bands & $1.8\times$, $1.0\times$ & Derived from \texttt{ANOMALY\_THRESHOLD}; not independent parameters (Section~\ref{subsec:l0_threshold}) \\
+Retrieval relevance cut-off & $0.15$ & \textbf{Inherited default; no derivation on record} (Section~\ref{subsec:retrieval_threshold}) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{L3 --- the anomaly threshold}
+\label{subsec:l3_threshold}
+
+\texttt{ANOMALY\_THRESHOLD} is the scale anchor for L3's blocking decision. L3 blocks when the anomaly score exceeds twice the effective threshold, where the effective threshold is reduced to $0.7\times$ its nominal value for queries L0 has classified HIGH. The operative bar is therefore $30.0$ for LOW and MEDIUM queries and $21.0$ for HIGH ones.
+
+Because L0--L3 inspect the query text only --- no retrieval, no model inference --- the entire decision is reproducible from the generators alone. A full sweep is consequently cheap enough to run for every candidate value rather than argued from a single point. Table~\ref{tab:l3_sweep} reports that sweep over five seeds, evaluating attacks and \emph{both} benign sets at each candidate so that the trade-off is visible in one place rather than tuned against one side.
+
+\begin{table}[h]
+\centering
+\caption{Sensitivity of detection and false-positive rate to \texttt{ANOMALY\_THRESHOLD}. Five seeds; 5{,}005 attacks, 1{,}665 generated benign queries, 333 BIPIA benign documents. Detection is measured before L4.}
+\label{tab:l3_sweep}
+\begin{tabular}{rrrrr}
+\toprule
+\textbf{Threshold} & \textbf{Detection} & \textbf{L3 blocks} & \textbf{Internal FPR} & \textbf{External FPR} \\
+\midrule
+ 5.0 & 93.33\,\% & 323 & 4.38\,\% & 91.29\,\% \\
+ 7.5 & 92.23\,\% & 268 & 0.00\,\% & 84.68\,\% \\
+10.0 & 90.69\,\% & 191 & 0.00\,\% & 57.06\,\% \\
+12.5 & 89.67\,\% & 140 & 0.00\,\% & 14.11\,\% \\
+\textbf{15.0} & \textbf{89.37\,\%} & \textbf{125} & \textbf{0.00\,\%} & \textbf{1.80\,\%} \\
+17.5 & 87.77\,\% &  45 & 0.00\,\% & 0.00\,\% \\
+20.0 & 87.49\,\% &  31 & 0.00\,\% & 0.00\,\% \\
+25.0 & 87.21\,\% &  17 & 0.00\,\% & 0.00\,\% \\
+30.0 & 87.01\,\% &   7 & 0.00\,\% & 0.00\,\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Three things follow, and the second is a limitation rather than a defence of the choice.
+
+\textbf{The external false-positive rate is a cliff, and $15.0$ sits at its edge.} Detection falls slowly and almost linearly as the threshold rises --- 6.3 points across the whole range --- while the external false-positive rate collapses from 91.29\,\% to 1.80\,\% between $5.0$ and $15.0$, and to zero immediately above it. The shape of the trade-off, not a preference, is what selects the value: $15.0$ is the \emph{lowest} threshold --- and therefore the highest detection --- at which the external false-positive rate is under 2\,\%. Every step below it is very expensive and every step above it is comparatively cheap.
+
+\textbf{The internal benign set cannot discriminate here, and should not be cited as if it could.} Internal FPR reads $0.00\,\%$ at every threshold from $7.5$ to $30.0$. The generated benign queries are short, user-written questions that rarely accumulate enough structural signal to approach L3's bar at all, so they are simply insensitive to this parameter. The external BIPIA documents --- long, dense, table- and email-shaped --- are the only benign evidence that constrains it. This is the same limitation reported for the internal false-positive rate in Chapter~\ref{ch:evaluation}, appearing here as a property of the measurement rather than of the system.
+
+\textbf{$17.5$ is a defensible alternative and is not claimed to be worse.} It removes the external false-positive rate entirely at a cost of 1.6 points of detection. The value $15.0$ is reported because it is what every result in this thesis was produced with, not because the sweep establishes it as optimal; a deployment weighting false positives more heavily than missed detections should prefer $17.5$. Stating this is the point of running the sweep.
+
+The cliff between $12.5$ and $17.5$ has a known cause. L3's first dimension scores length and sentence count, and its sentence bonus was originally unbounded: a genuine 90-sentence business email scored $+108$ from sentence count alone. Direct measurement on the BIPIA benign set found that $211$ of $333$ documents ($63\,\%$) are longer than 800 characters and contain no suspicious keyword anywhere, and the external false-positive rate before this was corrected stood at $68.47\,\%$ ($228/333$). The fix caps that dimension's total contribution at $20.0$, so length alone can raise a query to MEDIUM risk --- which opens the inexpensive L4 check --- but cannot by itself reach the hard-block bar. The residual $1.80\,\%$ at $15.0$ consists of six documents, all dense data tables, all blocked at L3, and is analysed in Chapter~\ref{ch:evaluation}.
+
+\subsection{L4 --- the semantic threshold}
+\label{subsec:l4_threshold}
+
+\texttt{SEMANTIC\_THRESHOLD} is the cosine-similarity floor below which L4 treats a generated response as having left the knowledge base's semantic boundary. Its history is reported in full because two of its three values were not derived from data.
+
+The originally submitted value, $0.45$, was an unvalidated default. It was inconsistent with a threshold already in use elsewhere in the same embedding space: the retrieval step admits a passage as relevant at a similarity above $0.15$. Requiring a model's \emph{answer} to resemble the corpus more closely ($0.45$) than a passage must in order to count as relevant material in the first place ($0.15$) was never a deliberate design decision. Measured against the external benign set, it produced a false-positive rate of $68.47\,\%$, rising to $96.67\,\%$ on emails specifically; inspection of 29 sampled cases showed similarities of $0.223$--$0.380$, all of them correct answers grounded in document content the query itself supplied, and none of them fabricated.
+
+The value was first moved to $0.15$ by reasoning from the retrieval bar. That is an argument from consistency, not evidence, and it is recorded as such.
+
+The shipped value, $0.18$, is the first to be selected from a two-sided sweep. On the external BIPIA data the false-positive rate is \emph{flat} at $1.80\,\%$ for every threshold from $0.15$ through $0.25$, which makes $0.25$ appear free. The internal benign run contradicts this: five of its 333 responses score between $0.186$ and $0.2331$, and they include near-verbatim instances of the very queries that motivated correcting L0's keyword matching --- \textit{``How do I override a method in a Python subclass?''} and the \texttt{.gitignore} question quoted in Appendix~\ref{app:demo}. Setting the threshold at $0.25$ would silently re-block those at L4, undoing at one layer a correction made at another. The value $0.18$ sits just below that internal cliff, the lowest at-risk score being $0.186$: it is the highest threshold that costs nothing on either side. Above $0.18$ the choice becomes a genuine trade-off --- external detection gained against internal false positives --- and is left as an explicit decision rather than a default.
+
+\subsection{L0 --- derived bands, and no blocking authority}
+\label{subsec:l0_threshold}
+
+L0 introduces no independent numeric parameter. Its two bands are multiples of \texttt{ANOMALY\_THRESHOLD} ($1.8\times$ for HIGH, $1.0\times$ for MEDIUM), and its fast path for high-risk queries calls the same regular expressions L2 uses rather than maintaining a second keyword list --- a deliberate choice, since the earlier standalone list was what caused ordinary technical vocabulary to be classified as high risk.
+
+More importantly, \textbf{L0 never blocks}. It returns a risk classification that modulates two later decisions: it lowers L3's effective bar for HIGH-risk queries, and it opens L4's gate. No query is rejected on L0's authority, so L0 cannot produce a false positive on its own and has no threshold requiring separate calibration. Its bands inherit whatever justification Section~\ref{subsec:l3_threshold} establishes for the anchor.
+
+\subsection{The retrieval relevance cut-off --- an inherited default}
+\label{subsec:retrieval_threshold}
+
+The retriever admits a passage as relevant context at a cosine similarity above $0.15$. \textbf{No derivation for this value exists on record.} It predates the parameters above, was never swept, and is reported here as an inherited default rather than a calibrated choice.
+
+It is disclosed rather than omitted for two reasons. First, it propagated: the argument that moved \texttt{SEMANTIC\_THRESHOLD} from $0.45$ to $0.15$ rested on consistency with this number, so an undocumented default briefly became the justification for a second parameter --- which is precisely why the sweep described in Section~\ref{subsec:l4_threshold} was then run to replace that reasoning with evidence. Second, its influence on the reported results is indirect: it selects which passages are supplied as context, and affects blocking only through the similarity L4 subsequently measures. Establishing its sensitivity would require re-running retrieval and generation at each candidate value, which was not done, and it is therefore listed among the open limitations in Chapter~\ref{ch:evaluation}.
+
+\subsection{Circularity in the tuning set}
+\label{subsec:threshold_circularity}
+
+The 333-document BIPIA benign set used above had been used earlier to calibrate two parameters: L3's length cap and L4's semantic threshold. A false-positive rate measured on it is therefore closer to training-set accuracy than to held-out accuracy \emph{for those two parameters specifically}. This is a genuine methodological weakness and is disclosed rather than presented as an independent result.
+
+It is addressed by drawing a fresh benign sample from the same raw BIPIA pool, excluding every document already used. The pool holds approximately 1{,}100 documents and the tuning set used 333, leaving 767 never-seen documents; the draw is seeded, so independent replications are available without limit. On a genuinely unseen sample of 333 documents the false-positive rate is $1.20\,\%$ ($4/333$) --- the figure that should be read as held-out, with the $1.80\,\%$ above understood as measured on the tuning set.
