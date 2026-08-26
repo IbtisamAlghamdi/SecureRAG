@@ -221,7 +221,7 @@ protect. Describing the margin gives the same point with a figure behind it.
 
 **With:**
 
-> Both observed false positives occurred at L4, on responses whose corpus-similarity score fell below the 0.18 semantic threshold. The margin involved is narrow: the five internal benign responses closest to the boundary score between 0.186 and 0.2331, so 0.006 separates the nearest of them from a block.
+> Both observed false positives occurred at L4, on responses whose corpus-similarity score fell below the 0.18 semantic threshold. The margin involved is narrow. Running the demonstration queries of Appendix~\ref{app:demo} through the complete system gives similarity scores of 0.1949 and 0.2189 for the two security-adjacent benign queries that reach L4, against a threshold of 0.18: the first clears the bar by 0.0149. Across the wider internal benign set the five responses closest to the boundary fall between 0.186 and 0.2331, so the nearest of them sits 0.006 above a block.
 
 ---
 
@@ -527,3 +527,40 @@ These were verified against the code or recomputed during this review.
 | Homoglyph fix, 73.9 to 88.1 per cent by variant and 89.37 to 90.63 per cent overall | matches the patch record |
 | Appendix A line counts, pattern tiers, and gating conditions | match the source |
 | Appendix B, all fifteen layer attributions | re-measured this session |
+
+---
+
+## Part 6. Appendix B, after the timing run
+
+The demonstration was run on the evaluation hardware with the model and retrieval index
+loaded, three passes per query, and the results are now folded into `APPENDIX_A_B.tex`.
+There are around a dozen small insertions, so replace the whole of Appendix B with the
+updated file rather than applying them one by one. What changed:
+
+**Per-query latency, now measured rather than omitted.** All nine blocked attacks were
+rejected in under a millisecond; the pipeline records the elapsed time to three decimal
+places and every one of them rounded to 0.000 seconds. The five legitimate queries took
+between 7.382 and 19.675 seconds, since each is answered in full. B.3 now uses that
+contrast to make the latency argument concrete, and adds a sentence explaining why an
+individual query can exceed the 17.837-second baseline mean without contradicting it.
+
+**L4 similarity scores, now available.** The three benign queries that reach L4 score
+0.8035, 0.2189 and 0.1949 against the 0.18 threshold, so the last clears it by 0.0149.
+These are the security-adjacent phrasings the threshold was set to accommodate, and they
+fall inside the 0.186 to 0.2331 band recorded for the wider benign set.
+
+**The semantic camouflage bypass, explained by its score.** Item 10 scores 0.7602, higher
+than two of the five legitimate queries. The model treated the question as an academic one
+and answered from the corpus, which is why L4 passes it correctly. A new observation in
+B.3 draws the distinction between clearing every layer and producing harmful output, and
+connects it to the 70.3 per cent figure from the external benchmark.
+
+**One convention now stated explicitly.** The run surfaced an ambiguity worth heading off.
+For a block at L1, L3 or L4 the risk value recorded in the log is L0's classification of
+the query. For a block at L2 it is instead the risk weight of the pattern tier that
+matched, because `pipeline.py` passes `rule_risk` rather than `risk_level` on that path.
+The two coincide for eight of the ten attack examples. They separate on item 8, where L0
+returned LOW and the block is logged as MEDIUM because `trust_escalation` is a
+MEDIUM-weighted tier. Both values are now given for that item, and the convention is
+stated in the appendix preamble so a reader comparing the appendix against a fresh run
+does not read it as a discrepancy.
