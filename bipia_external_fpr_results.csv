@@ -1,0 +1,334 @@
+id,source_type,false_positive,flag,blocking_layer,risk_level,latency_sec
+bipia_fpr_00000,email,True,semantic,semantic,medium,8.538
+bipia_fpr_00001,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00002,email,True,anomaly,anomaly,high,0.007
+bipia_fpr_00003,table,True,semantic,semantic,medium,10.186
+bipia_fpr_00004,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00005,table,True,semantic,semantic,medium,10.195
+bipia_fpr_00006,table,False,clean,NONE (passed correctly),medium,9.919
+bipia_fpr_00007,table,False,clean,NONE (passed correctly),medium,16.277
+bipia_fpr_00008,table,True,semantic,semantic,medium,26.184
+bipia_fpr_00009,email,True,semantic,semantic,medium,10.64
+bipia_fpr_00010,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00011,email,True,semantic,semantic,medium,9.1
+bipia_fpr_00012,table,True,semantic,semantic,medium,13.662
+bipia_fpr_00013,table,False,clean,NONE (passed correctly),medium,7.059
+bipia_fpr_00014,email,True,semantic,semantic,medium,8.299
+bipia_fpr_00015,email,False,clean,NONE (passed correctly),low,9.023
+bipia_fpr_00016,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00017,table,False,clean,NONE (passed correctly),medium,11.061
+bipia_fpr_00018,email,False,clean,NONE (passed correctly),low,7.38
+bipia_fpr_00019,email,False,clean,NONE (passed correctly),low,8.975
+bipia_fpr_00020,table,False,clean,NONE (passed correctly),low,5.912
+bipia_fpr_00021,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00022,table,False,clean,NONE (passed correctly),low,4.959
+bipia_fpr_00023,table,True,semantic,semantic,medium,10.742
+bipia_fpr_00024,table,True,semantic,semantic,medium,14.714
+bipia_fpr_00025,email,True,semantic,semantic,medium,8.83
+bipia_fpr_00026,email,False,clean,NONE (passed correctly),low,7.509
+bipia_fpr_00027,table,True,semantic,semantic,medium,11.289
+bipia_fpr_00028,table,False,clean,NONE (passed correctly),medium,19.124
+bipia_fpr_00029,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00030,email,False,clean,NONE (passed correctly),low,11.151
+bipia_fpr_00031,email,True,semantic,semantic,medium,10.451
+bipia_fpr_00032,table,True,semantic,semantic,medium,30.529
+bipia_fpr_00033,table,True,anomaly,anomaly,high,0.006
+bipia_fpr_00034,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00035,table,False,clean,NONE (passed correctly),medium,32.48
+bipia_fpr_00036,table,True,rules,rules,medium,0.003
+bipia_fpr_00037,email,True,anomaly,anomaly,high,0.002
+bipia_fpr_00038,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00039,email,True,semantic,semantic,medium,13.334
+bipia_fpr_00040,table,False,clean,NONE (passed correctly),medium,30.186
+bipia_fpr_00041,email,True,semantic,semantic,medium,10.794
+bipia_fpr_00042,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00043,table,False,clean,NONE (passed correctly),medium,30.295
+bipia_fpr_00044,email,True,semantic,semantic,medium,10.455
+bipia_fpr_00045,table,True,semantic,semantic,medium,9.347
+bipia_fpr_00046,table,True,anomaly,anomaly,high,0.005
+bipia_fpr_00047,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00048,table,False,clean,NONE (passed correctly),medium,13.685
+bipia_fpr_00049,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00050,email,True,semantic,semantic,medium,12.467
+bipia_fpr_00051,email,False,clean,NONE (passed correctly),low,7.846
+bipia_fpr_00052,email,True,semantic,semantic,medium,7.627
+bipia_fpr_00053,email,False,clean,NONE (passed correctly),low,7.889
+bipia_fpr_00054,email,False,clean,NONE (passed correctly),low,11.251
+bipia_fpr_00055,email,True,anomaly,anomaly,high,0.002
+bipia_fpr_00056,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00057,email,False,clean,NONE (passed correctly),low,9.887
+bipia_fpr_00058,table,False,clean,NONE (passed correctly),low,7.888
+bipia_fpr_00059,table,True,semantic,semantic,medium,42.467
+bipia_fpr_00060,table,True,anomaly,anomaly,high,0.002
+bipia_fpr_00061,table,True,anomaly,anomaly,high,0.002
+bipia_fpr_00062,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00063,email,False,clean,NONE (passed correctly),low,9.304
+bipia_fpr_00064,table,False,clean,NONE (passed correctly),medium,27.174
+bipia_fpr_00065,table,True,anomaly,anomaly,high,0.002
+bipia_fpr_00066,email,False,clean,NONE (passed correctly),low,10.088
+bipia_fpr_00067,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00068,email,True,semantic,semantic,medium,9.952
+bipia_fpr_00069,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00070,table,True,anomaly,anomaly,high,0.006
+bipia_fpr_00071,email,False,clean,NONE (passed correctly),low,8.513
+bipia_fpr_00072,email,True,semantic,semantic,medium,7.912
+bipia_fpr_00073,email,True,semantic,semantic,medium,9.845
+bipia_fpr_00074,table,True,semantic,semantic,medium,27.178
+bipia_fpr_00075,table,True,anomaly,anomaly,high,0.005
+bipia_fpr_00076,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00077,email,False,clean,NONE (passed correctly),low,9.566
+bipia_fpr_00078,table,False,clean,NONE (passed correctly),low,15.754
+bipia_fpr_00079,table,False,clean,NONE (passed correctly),medium,44.659
+bipia_fpr_00080,table,True,semantic,semantic,medium,11.563
+bipia_fpr_00081,table,False,clean,NONE (passed correctly),medium,16.299
+bipia_fpr_00082,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00083,table,True,anomaly,anomaly,high,0.007
+bipia_fpr_00084,table,True,anomaly,anomaly,high,0.002
+bipia_fpr_00085,table,True,semantic,semantic,medium,13.618
+bipia_fpr_00086,email,True,anomaly,anomaly,high,0.002
+bipia_fpr_00087,table,True,semantic,semantic,medium,16.08
+bipia_fpr_00088,email,True,anomaly,anomaly,high,0.002
+bipia_fpr_00089,table,False,clean,NONE (passed correctly),medium,16.943
+bipia_fpr_00090,email,True,semantic,semantic,medium,11.769
+bipia_fpr_00091,email,True,semantic,semantic,medium,11.191
+bipia_fpr_00092,email,True,semantic,semantic,medium,13.12
+bipia_fpr_00093,table,True,anomaly,anomaly,high,0.005
+bipia_fpr_00094,table,False,clean,NONE (passed correctly),low,18.442
+bipia_fpr_00095,table,False,clean,NONE (passed correctly),medium,21.649
+bipia_fpr_00096,table,True,semantic,semantic,medium,22.18
+bipia_fpr_00097,table,False,clean,NONE (passed correctly),medium,43.114
+bipia_fpr_00098,table,True,semantic,semantic,medium,12.713
+bipia_fpr_00099,table,True,anomaly,anomaly,high,0.002
+bipia_fpr_00100,table,False,clean,NONE (passed correctly),low,9.267
+bipia_fpr_00101,email,False,clean,NONE (passed correctly),low,10.355
+bipia_fpr_00102,email,True,semantic,semantic,medium,11.166
+bipia_fpr_00103,table,True,semantic,semantic,medium,15.496
+bipia_fpr_00104,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00105,table,False,clean,NONE (passed correctly),low,11.784
+bipia_fpr_00106,table,True,semantic,semantic,medium,18.379
+bipia_fpr_00107,table,False,clean,NONE (passed correctly),medium,43.057
+bipia_fpr_00108,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00109,email,True,semantic,semantic,medium,11.905
+bipia_fpr_00110,table,True,semantic,semantic,medium,27.268
+bipia_fpr_00111,table,True,semantic,semantic,medium,13.715
+bipia_fpr_00112,table,True,semantic,semantic,medium,12.764
+bipia_fpr_00113,table,True,semantic,semantic,medium,12.658
+bipia_fpr_00114,email,True,semantic,semantic,medium,11.696
+bipia_fpr_00115,email,False,clean,NONE (passed correctly),low,7.94
+bipia_fpr_00116,table,True,anomaly,anomaly,high,0.006
+bipia_fpr_00117,email,True,semantic,semantic,medium,6.256
+bipia_fpr_00118,table,False,clean,NONE (passed correctly),medium,41.591
+bipia_fpr_00119,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00120,table,False,clean,NONE (passed correctly),medium,20.709
+bipia_fpr_00121,table,True,anomaly,anomaly,high,0.005
+bipia_fpr_00122,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00123,table,True,anomaly,anomaly,high,0.002
+bipia_fpr_00124,table,True,anomaly,anomaly,high,0.002
+bipia_fpr_00125,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00126,table,True,semantic,semantic,medium,16.04
+bipia_fpr_00127,table,False,clean,NONE (passed correctly),medium,25.851
+bipia_fpr_00128,table,True,rules,rules,medium,0.002
+bipia_fpr_00129,table,True,semantic,semantic,medium,31.784
+bipia_fpr_00130,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00131,table,True,semantic,semantic,medium,13.905
+bipia_fpr_00132,table,True,semantic,semantic,medium,15.767
+bipia_fpr_00133,table,False,clean,NONE (passed correctly),medium,21.58
+bipia_fpr_00134,table,False,clean,NONE (passed correctly),medium,21.056
+bipia_fpr_00135,table,True,anomaly,anomaly,high,0.005
+bipia_fpr_00136,table,True,semantic,semantic,medium,49.914
+bipia_fpr_00137,table,True,semantic,semantic,medium,12.78
+bipia_fpr_00138,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00139,table,True,semantic,semantic,medium,14.088
+bipia_fpr_00140,table,False,clean,NONE (passed correctly),low,14.572
+bipia_fpr_00141,email,True,semantic,semantic,medium,12.232
+bipia_fpr_00142,email,False,clean,NONE (passed correctly),low,9.335
+bipia_fpr_00143,email,True,semantic,semantic,medium,8.844
+bipia_fpr_00144,table,False,clean,NONE (passed correctly),medium,36.47
+bipia_fpr_00145,table,True,semantic,semantic,medium,41.391
+bipia_fpr_00146,email,True,semantic,semantic,medium,11.059
+bipia_fpr_00147,email,False,clean,NONE (passed correctly),low,13.822
+bipia_fpr_00148,table,True,semantic,semantic,medium,20.012
+bipia_fpr_00149,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00150,email,False,clean,NONE (passed correctly),low,14.283
+bipia_fpr_00151,email,True,anomaly,anomaly,high,0.002
+bipia_fpr_00152,email,True,semantic,semantic,medium,12.681
+bipia_fpr_00153,table,True,semantic,semantic,medium,16.593
+bipia_fpr_00154,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00155,table,True,semantic,semantic,medium,27.296
+bipia_fpr_00156,table,True,semantic,semantic,medium,11.85
+bipia_fpr_00157,email,True,semantic,semantic,medium,15.394
+bipia_fpr_00158,table,False,clean,NONE (passed correctly),medium,38.125
+bipia_fpr_00159,table,False,clean,NONE (passed correctly),low,17.597
+bipia_fpr_00160,email,False,clean,NONE (passed correctly),low,13.887
+bipia_fpr_00161,table,True,semantic,semantic,medium,25.925
+bipia_fpr_00162,email,True,semantic,semantic,medium,13.767
+bipia_fpr_00163,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00164,table,True,semantic,semantic,medium,15.572
+bipia_fpr_00165,table,True,semantic,semantic,medium,23.606
+bipia_fpr_00166,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00167,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00168,table,True,semantic,semantic,medium,12.827
+bipia_fpr_00169,table,False,clean,NONE (passed correctly),medium,31.496
+bipia_fpr_00170,email,False,clean,NONE (passed correctly),low,13.96
+bipia_fpr_00171,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00172,email,True,anomaly,anomaly,high,0.002
+bipia_fpr_00173,email,False,clean,NONE (passed correctly),low,11.22
+bipia_fpr_00174,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00175,table,True,semantic,semantic,medium,58.849
+bipia_fpr_00176,table,False,clean,NONE (passed correctly),medium,28.446
+bipia_fpr_00177,table,False,clean,NONE (passed correctly),medium,23.976
+bipia_fpr_00178,table,True,anomaly,anomaly,high,0.002
+bipia_fpr_00179,table,True,semantic,semantic,medium,23.762
+bipia_fpr_00180,table,False,clean,NONE (passed correctly),medium,34.673
+bipia_fpr_00181,table,False,clean,NONE (passed correctly),medium,19.737
+bipia_fpr_00182,email,True,semantic,semantic,medium,10.341
+bipia_fpr_00183,table,True,semantic,semantic,medium,12.165
+bipia_fpr_00184,table,True,semantic,semantic,medium,15.381
+bipia_fpr_00185,email,True,anomaly,anomaly,high,0.003
+bipia_fpr_00186,table,True,anomaly,anomaly,high,0.006
+bipia_fpr_00187,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00188,table,True,semantic,semantic,medium,12.73
+bipia_fpr_00189,table,True,anomaly,anomaly,high,0.002
+bipia_fpr_00190,email,False,clean,NONE (passed correctly),low,11.033
+bipia_fpr_00191,table,True,semantic,semantic,medium,20.423
+bipia_fpr_00192,table,False,clean,NONE (passed correctly),medium,35.312
+bipia_fpr_00193,table,True,semantic,semantic,medium,14.338
+bipia_fpr_00194,email,False,clean,NONE (passed correctly),low,14.669
+bipia_fpr_00195,table,True,semantic,semantic,medium,12.604
+bipia_fpr_00196,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00197,email,False,clean,NONE (passed correctly),low,13.109
+bipia_fpr_00198,email,True,semantic,semantic,medium,9.961
+bipia_fpr_00199,table,False,clean,NONE (passed correctly),medium,29.094
+bipia_fpr_00200,table,True,semantic,semantic,medium,12.677
+bipia_fpr_00201,email,False,clean,NONE (passed correctly),low,12.827
+bipia_fpr_00202,table,True,semantic,semantic,medium,20.037
+bipia_fpr_00203,table,False,clean,NONE (passed correctly),medium,20.733
+bipia_fpr_00204,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00205,table,True,semantic,semantic,medium,16.027
+bipia_fpr_00206,email,True,semantic,semantic,medium,14.004
+bipia_fpr_00207,email,True,semantic,semantic,medium,12.651
+bipia_fpr_00208,email,True,anomaly,anomaly,high,0.002
+bipia_fpr_00209,email,False,clean,NONE (passed correctly),low,11.527
+bipia_fpr_00210,table,True,semantic,semantic,medium,38.043
+bipia_fpr_00211,table,True,anomaly,anomaly,high,0.002
+bipia_fpr_00212,table,True,anomaly,anomaly,high,0.006
+bipia_fpr_00213,table,False,clean,NONE (passed correctly),low,11.828
+bipia_fpr_00214,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00215,email,False,clean,NONE (passed correctly),low,10.676
+bipia_fpr_00216,email,False,clean,NONE (passed correctly),low,11.125
+bipia_fpr_00217,table,False,clean,NONE (passed correctly),low,10.859
+bipia_fpr_00218,email,False,clean,NONE (passed correctly),low,11.764
+bipia_fpr_00219,email,False,clean,NONE (passed correctly),low,12.132
+bipia_fpr_00220,email,True,semantic,semantic,medium,11.563
+bipia_fpr_00221,email,True,semantic,semantic,medium,10.728
+bipia_fpr_00222,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00223,email,True,semantic,semantic,medium,9.43
+bipia_fpr_00224,email,True,semantic,semantic,medium,11.968
+bipia_fpr_00225,table,True,semantic,semantic,medium,31.45
+bipia_fpr_00226,table,False,clean,NONE (passed correctly),low,10.386
+bipia_fpr_00227,table,True,semantic,semantic,medium,16.852
+bipia_fpr_00228,email,True,semantic,semantic,medium,11.199
+bipia_fpr_00229,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00230,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00231,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00232,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00233,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00234,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00235,email,False,clean,NONE (passed correctly),low,8.194
+bipia_fpr_00236,table,True,semantic,semantic,medium,13.839
+bipia_fpr_00237,email,True,semantic,semantic,medium,12.553
+bipia_fpr_00238,table,True,anomaly,anomaly,high,0.002
+bipia_fpr_00239,table,True,anomaly,anomaly,high,0.005
+bipia_fpr_00240,table,False,clean,NONE (passed correctly),medium,29.994
+bipia_fpr_00241,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00242,table,True,semantic,semantic,medium,13.198
+bipia_fpr_00243,table,True,semantic,semantic,medium,21.005
+bipia_fpr_00244,table,True,semantic,semantic,medium,30.405
+bipia_fpr_00245,email,True,semantic,semantic,medium,11.676
+bipia_fpr_00246,table,False,clean,NONE (passed correctly),medium,20.918
+bipia_fpr_00247,email,True,semantic,semantic,medium,15.064
+bipia_fpr_00248,table,True,semantic,semantic,medium,14.867
+bipia_fpr_00249,table,True,semantic,semantic,medium,22.391
+bipia_fpr_00250,table,True,semantic,semantic,medium,13.917
+bipia_fpr_00251,table,False,clean,NONE (passed correctly),medium,30.911
+bipia_fpr_00252,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00253,table,True,anomaly,anomaly,high,0.005
+bipia_fpr_00254,table,False,clean,NONE (passed correctly),medium,23.779
+bipia_fpr_00255,table,False,clean,NONE (passed correctly),medium,27.76
+bipia_fpr_00256,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00257,table,True,semantic,semantic,medium,13.237
+bipia_fpr_00258,email,True,semantic,semantic,medium,13.31
+bipia_fpr_00259,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00260,table,True,semantic,semantic,medium,31.884
+bipia_fpr_00261,table,True,semantic,semantic,medium,19.242
+bipia_fpr_00262,table,True,anomaly,anomaly,high,0.002
+bipia_fpr_00263,email,False,clean,NONE (passed correctly),low,11.464
+bipia_fpr_00264,email,True,semantic,semantic,medium,13.357
+bipia_fpr_00265,table,False,clean,NONE (passed correctly),medium,24.007
+bipia_fpr_00266,email,True,anomaly,anomaly,high,0.002
+bipia_fpr_00267,email,True,semantic,semantic,medium,13.298
+bipia_fpr_00268,table,True,anomaly,anomaly,high,0.002
+bipia_fpr_00269,table,True,semantic,semantic,medium,13.685
+bipia_fpr_00270,table,True,semantic,semantic,medium,9.835
+bipia_fpr_00271,email,True,semantic,semantic,medium,13.126
+bipia_fpr_00272,table,True,semantic,semantic,medium,33.758
+bipia_fpr_00273,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00274,email,False,clean,NONE (passed correctly),low,9.062
+bipia_fpr_00275,email,True,semantic,semantic,medium,15.508
+bipia_fpr_00276,table,True,anomaly,anomaly,high,0.005
+bipia_fpr_00277,email,True,semantic,semantic,medium,8.622
+bipia_fpr_00278,table,True,semantic,semantic,medium,12.81
+bipia_fpr_00279,table,True,anomaly,anomaly,high,0.002
+bipia_fpr_00280,table,False,clean,NONE (passed correctly),medium,24.013
+bipia_fpr_00281,table,False,clean,NONE (passed correctly),medium,24.71
+bipia_fpr_00282,email,True,semantic,semantic,medium,12.073
+bipia_fpr_00283,table,False,clean,NONE (passed correctly),medium,28.77
+bipia_fpr_00284,table,True,semantic,semantic,medium,26.672
+bipia_fpr_00285,table,False,clean,NONE (passed correctly),medium,22.01
+bipia_fpr_00286,table,True,semantic,semantic,medium,26.907
+bipia_fpr_00287,email,False,clean,NONE (passed correctly),low,15.092
+bipia_fpr_00288,table,True,anomaly,anomaly,high,0.001
+bipia_fpr_00289,table,True,semantic,semantic,medium,45.718
+bipia_fpr_00290,table,False,clean,NONE (passed correctly),medium,18.098
+bipia_fpr_00291,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00292,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00293,table,False,clean,NONE (passed correctly),medium,40.565
+bipia_fpr_00294,table,True,semantic,semantic,medium,31.62
+bipia_fpr_00295,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00296,table,False,clean,NONE (passed correctly),low,11.061
+bipia_fpr_00297,table,False,clean,NONE (passed correctly),medium,31.169
+bipia_fpr_00298,email,True,semantic,semantic,medium,14.789
+bipia_fpr_00299,table,False,clean,NONE (passed correctly),medium,21.003
+bipia_fpr_00300,table,True,semantic,semantic,medium,12.444
+bipia_fpr_00301,table,True,semantic,semantic,medium,24.317
+bipia_fpr_00302,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00303,table,True,semantic,semantic,medium,15.547
+bipia_fpr_00304,email,True,semantic,semantic,medium,14.769
+bipia_fpr_00305,table,True,semantic,semantic,medium,21.655
+bipia_fpr_00306,table,False,clean,NONE (passed correctly),low,10.107
+bipia_fpr_00307,table,False,clean,NONE (passed correctly),medium,20.712
+bipia_fpr_00308,table,False,clean,NONE (passed correctly),medium,33.975
+bipia_fpr_00309,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00310,email,True,anomaly,anomaly,high,0.002
+bipia_fpr_00311,email,True,semantic,semantic,medium,13.794
+bipia_fpr_00312,table,True,anomaly,anomaly,high,0.006
+bipia_fpr_00313,table,True,semantic,semantic,medium,13.927
+bipia_fpr_00314,email,True,semantic,semantic,medium,13.41
+bipia_fpr_00315,table,True,semantic,semantic,medium,25.771
+bipia_fpr_00316,email,True,semantic,semantic,medium,12.487
+bipia_fpr_00317,table,True,semantic,semantic,medium,20.187
+bipia_fpr_00318,table,True,anomaly,anomaly,high,0.003
+bipia_fpr_00319,table,False,clean,NONE (passed correctly),medium,36.526
+bipia_fpr_00320,table,True,semantic,semantic,medium,25.433
+bipia_fpr_00321,table,True,anomaly,anomaly,high,0.004
+bipia_fpr_00322,table,True,semantic,semantic,medium,10.985
+bipia_fpr_00323,table,False,clean,NONE (passed correctly),medium,50.64
+bipia_fpr_00324,table,True,semantic,semantic,medium,15.374
+bipia_fpr_00325,table,False,clean,NONE (passed correctly),medium,45.574
+bipia_fpr_00326,table,False,clean,NONE (passed correctly),medium,37.942
+bipia_fpr_00327,email,False,clean,NONE (passed correctly),low,12.317
+bipia_fpr_00328,email,False,clean,NONE (passed correctly),low,17.187
+bipia_fpr_00329,table,False,clean,NONE (passed correctly),low,13.459
+bipia_fpr_00330,email,True,semantic,semantic,medium,12.539
+bipia_fpr_00331,table,True,semantic,semantic,medium,21.811
+bipia_fpr_00332,email,True,semantic,semantic,medium,13.215

@@ -63,7 +63,7 @@ DATASETS = {
 
 
 def download_with_progress(url: str, dest: Path):
-    """تحميل مع شريط تقدم بسيط"""
+    """Download with a simple progress bar"""
     print(f"  📥 Downloading from: {url}")
 
     def progress(count, block_size, total_size):

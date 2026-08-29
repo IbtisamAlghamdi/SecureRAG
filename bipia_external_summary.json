@@ -1,0 +1,48 @@
+{
+  "n_samples": 986,
+  "detection_rate_pct": 83.77,
+  "asr_external_pct": 16.23,
+  "avg_latency_sec": 12.201,
+  "layer_distribution": {
+    "semantic": 462,
+    "anomaly": 355,
+    "NONE (reached model)": 160,
+    "rules": 9
+  },
+  "per_category_detection_rate": {
+    "Business Intelligence": 88.2,
+    "Information Retrieval": 85.3,
+    "Clickbait": 85.3,
+    "Homophonic Substitution": 76.5,
+    "Reverse Text": 85.3,
+    "Persuasion": 88.2,
+    "Learning and Tutoring": 88.2,
+    "Content Creation": 79.4,
+    "Scams & Fraud": 88.2,
+    "Task Automation": 85.3,
+    "Misinformation & Propaganda": 82.4,
+    "Instruction": 82.4,
+    "Malware Distribution": 91.2,
+    "Misspelling Intentionally": 82.4,
+    "Social Interaction": 82.4,
+    "Substitution Ciphers": 82.4,
+    "Base Encoding": 82.4,
+    "Programming Help": 91.2,
+    "Entertainment": 76.5,
+    "Anagramming": 76.5,
+    "Space Removal & Grouping": 70.6,
+    "Alphanumeric Substitution": 82.4,
+    "Marketing & Advertising": 76.5,
+    "Research Assistance": 79.4,
+    "Sentiment Analysis": 88.2,
+    "Information Dissemination": 94.1,
+    "Language Translation": 79.4,
+    "Conversational Agent": 91.2,
+    "Emoji Substitution": 88.2
+  },
+  "internal_baseline_for_comparison": {
+    "ASR_pct": 8.96,
+    "FPR_pct": 0.0,
+    "n_attacks": 1001
+  }
+}

@@ -7,20 +7,35 @@ except ImportError:
     Llama = None
 
 class LLMEngine:
-    """Generator engine using GGUF - Singleton"""
+    """Generator engine using GGUF - Singleton (one loaded model per process).
+
+    FIXED (model-switch bug): `_initialized` used to be a CLASS attribute,
+    and the old code set `LLMEngine._initialized = True` on the class
+    itself. That meant once ANY model loaded successfully, `if
+    self._initialized: return` short-circuited on every later call in the
+    same process -- so `LLMEngine(model_path=<a different model>)` would
+    silently keep serving the FIRST model that ever loaded, with no error.
+    For a model comparison workflow (same defense config, only the LLM
+    changes) that would have quietly compared one model against itself.
+    Now: re-initialization only skips loading when the resolved model path
+    is unchanged from what is already loaded; a genuinely different
+    model_path always (re)loads.
+    """
     _instance = None
-    _initialized = False
 
     def __new__(cls, *args, **kwargs):
         if not cls._instance:
             cls._instance = super(LLMEngine, cls).__new__(cls)
+            cls._instance._initialized = False
+            cls._instance.model_path = None
         return cls._instance
 
     def __init__(self, model_path: str = None):
-        if self._initialized:
+        resolved_path = model_path or os.path.join(settings.MODELS_DIR, settings.GGUF_FILE)
+        if self._initialized and self.model_path == resolved_path:
             return
 
-        self.model_path = model_path or os.path.join(settings.MODELS_DIR, settings.GGUF_FILE)
+        self.model_path = resolved_path
         self.temp         = getattr(settings, 'TEMPERATURE', 0.7)
         self.top_p        = getattr(settings, 'TOP_P', 0.9)
         self.top_k        = getattr(settings, 'TOP_K_LLM', 40)
@@ -47,7 +62,7 @@ class LLMEngine:
                 verbose=False,
                 n_gpu_layers=-1
             )
-            LLMEngine._initialized = True
+            self._initialized = True
             print("✅ LLM loaded successfully.")
         except Exception as e:
             print(f"❌ Failed to load LLM: {e}")

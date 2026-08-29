@@ -1,5 +1,5 @@
 
-import sys, os, json, time, math, random, statistics
+import argparse, sys, os, json, time, math, random, statistics
 from typing import Dict, List, Tuple
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -11,6 +11,7 @@ from src.defenses.rules.rule_filter import rule_based_detector_detailed
 from src.defenses.anomaly.anomaly_detector import compute_anomaly_score
 from src.defenses.semantic.semantic_detector import semantic_response_is_suspicious
 from src.config import settings
+from model_select import add_model_arg, resolve_model, safe_filename
 
 import matplotlib
 matplotlib.use('Agg')
@@ -18,8 +19,23 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
 
+# ── Model selection ──────────────────────────────────────────────────────
+# Resolved once, at import time, so every output path below can be
+# namespaced by model -- running this once per model (Mistral-7B,
+# Llama-3.2-3B, Phi-3.5-Mini, ...) never overwrites another model's
+# results. Nothing else in this script changes based on which model is
+# selected: same thresholds, same corpus, same prompt template (see
+# SecureRAG(model_path=...) in src/pipeline.py) -- a true model-only
+# comparison.
+_arg_parser = argparse.ArgumentParser(
+    description="SecureRAG thesis evaluation -- 5-seed multirun + ablation study."
+)
+add_model_arg(_arg_parser)
+_args = _arg_parser.parse_args()
+SELECTED_MODEL = resolve_model(_args.model)
+
 # ── ─────────────────────────
-OUT_DIR      = "outputs/thesis_v2"
+OUT_DIR      = os.path.join("outputs", "thesis_v2", safe_filename(SELECTED_MODEL))
 PLOTS_DIR    = os.path.join(OUT_DIR, "plots")
 OUTPUT_JSON  = os.path.join(OUT_DIR, "thesis_results.json")
 LATEX_FILE   = os.path.join(OUT_DIR, "thesis_latex_snippets.txt")
@@ -74,11 +90,35 @@ def generate_dataset(seed: int):
     gen     = RealisticAttackGenerator()
     attacks = gen.generate_batch(ATTACK_COUNT, benign_ratio=0.0)
     attacks = [a for a in attacks if a.get('is_attack', True)][:ATTACK_COUNT]
-    benign  = random.choices(gen.benign_queries, k=BENIGN_COUNT)
+    # FIXED: was random.choices(gen.benign_queries, k=BENIGN_COUNT) -- sampled
+    # a static list WITH replacement, so duplicate benign queries could (and
+    # did) land in the same run. generate_benign_batch() builds BENIGN_COUNT
+    # dynamically from template x topic pools with zero duplicates.
+    benign  = gen.generate_benign_batch(BENIGN_COUNT)
     return attacks, benign
 
 
 # Basic Evaluation Function
+
+
+# FIXED (pre-flight audit, pre-existing since before this session's
+# changes): all 8 attack tier names are two-word (context_poisoning,
+# psychological_manipulation, ...), but the per-category grouping below
+# used to take only the text before the FIRST underscore
+# (atype.split('_')[0]) -- grouping was still numerically correct (all 8
+# first-words are distinct, verified), but the category LABEL shown in
+# the final table/chart came out truncated ("context" instead of "context
+# poisoning", "psychological" instead of "psychological manipulation").
+# Strips only the four known obfuscation suffixes generate_batch() can
+# append, keeping the rest of the tier name intact.
+_OBF_SUFFIXES = ('_base64', '_zwsp', '_homoglyph', '_context_wrap')
+
+
+def _base_tier_name(atype: str) -> str:
+    for suf in _OBF_SUFFIXES:
+        if atype.endswith(suf):
+            return atype[:-len(suf)]
+    return atype
 
 
 def evaluate(rag, attacks, benign, label=""):
@@ -102,7 +142,7 @@ def evaluate(rag, attacks, benign, label=""):
         elif 'semantic' in atype:
             sc_fail.append({'query': query[:200], 'type': atype,
                             'risk': res.get('risk','low')})
-        base = atype.split('_')[0]
+        base = _base_tier_name(atype)
         if base not in per_cat:
             per_cat[base] = {'total':0,'blocked':0}
         per_cat[base]['total']   += 1
@@ -142,8 +182,8 @@ def evaluate(rag, attacks, benign, label=""):
 
 # AblationRAG — Modified version without changing the original code
 class AblationRAG(SecureRAG):
-    def __init__(self, l1=True, l2=True, l3=True, l4=True):
-        super().__init__(enable_defenses=True)
+    def __init__(self, l1=True, l2=True, l3=True, l4=True, model_path=None):
+        super().__init__(enable_defenses=True, model_path=model_path)
         self.l1, self.l2, self.l3, self.l4 = l1, l2, l3, l4
 
     def run(self, query):
@@ -167,17 +207,26 @@ class AblationRAG(SecureRAG):
                 if det:
                     return self._block('rules', start, rr)
 
+            # Computed unconditionally (cheap) so both L3's gate and L4's
+            # gate below can use it regardless of which ablation config is
+            # active -- matches src/pipeline.py.
+            score = compute_anomaly_score(query)
+
             if self.l3:
-                score = compute_anomaly_score(query)
-                thr   = settings.get_anomaly_threshold()
-                eff   = thr * (0.7 if risk == 'HIGH' else 1.0)
+                thr = settings.get_anomaly_threshold()
+                eff = thr * (0.7 if risk == 'HIGH' else 1.0)
                 if score > eff * 2.0:
                     return self._block('anomaly', start, risk)
 
             context  = self._get_rag_context(san)
             response = self.llm.generate_answer(san, context)
 
-            if self.l4 and risk in ['HIGH','MEDIUM'] and response:
+            # FIXED: matches src/pipeline.py -- L4 (when enabled via self.l4
+            # for this ablation config) stays risk-adaptive, but "LOW" only
+            # skips it when the anomaly score is genuinely zero, not just
+            # under the MEDIUM threshold. See the FIXED comment in
+            # pipeline.py's run() for the full rationale and numbers.
+            if self.l4 and response and (risk in ["HIGH", "MEDIUM"] or score > 0):
                 susp, _ = semantic_response_is_suspicious(
                     response, self.retriever.get_embeddings(), self.embedder)
                 if susp:
@@ -197,7 +246,7 @@ class AblationRAG(SecureRAG):
 def plot_multirun_summary(runs, mean_asr, std_asr,
                           mean_fpr, std_fpr,
                           mean_lat, std_lat):
-    """Figure 1: ملخص الـ 5 تشغيلات — ASR / FPR / Latency"""
+    """Figure 1: Summary of the 5 runs — ASR / FPR / Latency"""
     fig, axes = plt.subplots(1, 3, figsize=(15, 6))
     fig.suptitle(
         f'SecureRAG Multi-Run Evaluation Summary (N={N_RUNS} independent runs)',
@@ -474,30 +523,34 @@ f"\\quad p {pval}",
     return "\n".join(lines)
 
 
-# SC Examples من JSON القديم
+# SC Examples
 
-def load_sc_examples():
+def load_sc_examples(runs=None):
+    """
+    FIXED: this used to read from outputs/evaluation_report.json (a
+    leftover file from an unrelated, much older single-run script) --
+    meaning the "representative bypass examples" printed and written to
+    the paper could be completely disconnected from the actual run that
+    just finished. sc_fail (real semantic-camouflage bypasses from THIS
+    run) is already computed by evaluate() and available on `runs`; use
+    that directly instead of reading a stale file. Falls back to the
+    static generator list only if no run data is available at all (e.g.
+    called standalone).
+    """
     examples = []
-    for json_path in ["outputs/evaluation_report.json",
-                      "outputs/final_evaluation_results_1334.csv"]:
-        if not os.path.exists(json_path): continue
-        try:
-            if json_path.endswith('.json'):
-                with open(json_path) as f:
-                    data = json.load(f)
-                for item in data:
-                    if not isinstance(item, dict): continue
-                    if 'semantic' in item.get('type','').lower() and \
-                       not item.get('blocked', True):
-                        examples.append({
-                            'query': item.get('payload','')[:250],
-                            'type':  item.get('type',''),
-                            'risk':  item.get('risk','low'),
-                        })
-                    if len(examples) >= 5: break
-        except: pass
+    if runs:
+        seen = set()
+        for r in runs:
+            for ex in r.get('sc_fail', []):
+                if ex['query'] not in seen:
+                    seen.add(ex['query'])
+                    examples.append(ex)
+                if len(examples) >= 5:
+                    break
+            if len(examples) >= 5:
+                break
 
-    # fallback من المولّد
+    # fallback to the generator -- only used if there's no real run data at all
     if len(examples) < 3:
         gen = RealisticAttackGenerator()
         for q in gen.semantic_camouflage[:3]:
@@ -511,6 +564,7 @@ def load_sc_examples():
 def main():
     print(SEP)
     print("SecureRAG — Thesis Evaluation v2")
+    print(f"Model            : {SELECTED_MODEL}")
     print(f"Output directory : {OUT_DIR}")
     print(f"Runs: {N_RUNS}  |  Attacks: {ATTACK_COUNT}  |  Benign: {BENIGN_COUNT}")
     print(SEP)
@@ -521,7 +575,14 @@ def main():
     print("PART 1 — 5-Run Full Evaluation")
     print(SEP)
 
-    rag  = SecureRAG(enable_defenses=True)
+    # Incremental per-run snapshot (including the per-category breakdown)
+    # written to disk after EACH run finishes -- so you can inspect
+    # per_cat for Run 1/2/... on outputs/thesis_v2/<model>/progress.json
+    # without waiting for all N_RUNS to complete, and without starting a
+    # second process that would compete with this one for the model.
+    PROGRESS_JSON = os.path.join(OUT_DIR, "progress.json")
+
+    rag  = SecureRAG(enable_defenses=True, model_path=settings.LLM_MODEL_PATH)
     runs = []
     for i, seed in enumerate(SEEDS):
         print(f"\nRun {i+1}/{N_RUNS}  (seed={seed})")
@@ -530,6 +591,14 @@ def main():
         runs.append(r)
         print(f"  → ASR={r['ASR']}%  FPR={r['FPR']}%  "
               f"Lat={r['latency']}s  Blocked={r['blocked']}/{ATTACK_COUNT}")
+
+        with open(PROGRESS_JSON, 'w', encoding='utf-8') as f:
+            json.dump({
+                'model': SELECTED_MODEL,
+                'runs_completed': i + 1,
+                'runs_total': N_RUNS,
+                'runs': runs,  # each entry includes 'per_cat' -- ASR/DR per attack category
+            }, f, indent=2, ensure_ascii=False, default=str)
 
     asr_vals = [r['ASR']     for r in runs]
     fpr_vals = [r['FPR']     for r in runs]
@@ -573,6 +642,25 @@ def main():
         'raw_runs': runs,
     }
 
+    # Save the COMPLETE Part 1 summary (including per_cat_avg) to disk now,
+    # before Part 2/3 even start. FIXED: previously the only on-disk output
+    # was the final json.dump() at the very end of the script, after Part 1
+    # + Part 2 (ablation) + Part 3 + plotting all finished -- if the process
+    # was interrupted anywhere in Part 2/3 (crash, closed terminal, machine
+    # slept), the complete, valid, hours-in-the-making Part 1 result
+    # (per-category breakdown included) was lost with nothing recoverable
+    # from disk. This happened in practice. Now it's safe the moment Part 1
+    # finishes, independent of whatever happens next.
+    with open(PROGRESS_JSON, 'w', encoding='utf-8') as f:
+        json.dump({
+            'model': SELECTED_MODEL,
+            'runs_completed': N_RUNS,
+            'runs_total': N_RUNS,
+            'part1_complete': True,
+            'full_evaluation': full_summary,
+            'ablation_study': {},  # filled in incrementally below as Part 2 runs
+        }, f, indent=2, ensure_ascii=False, default=str)
+
     print(f"\n{SEP}")
     print(f"  ASR      : {mean_asr:.2f}% ± {std_asr:.2f}%")
     print(f"  FPR      : {mean_fpr:.2f}% ± {std_fpr:.2f}%")
@@ -596,7 +684,7 @@ def main():
 
     for name, l1, l2, l3, l4 in configs:
         print(f"\nConfig: {name}")
-        abl_rag = AblationRAG(l1=l1, l2=l2, l3=l3, l4=l4)
+        abl_rag = AblationRAG(l1=l1, l2=l2, l3=l3, l4=l4, model_path=settings.LLM_MODEL_PATH)
         res = evaluate(abl_rag, atk_abl, ben_abl, label=name)
         ablation[name] = {
             'ASR':     res['ASR'],
@@ -606,6 +694,20 @@ def main():
         }
         print(f"  → ASR={res['ASR']}%  FPR={res['FPR']}%  "
               f"Lat={res['latency']}s")
+
+        # Same crash-safety as Part 1: persist each ablation config's
+        # result to disk the moment it finishes, not just at the very end.
+        with open(PROGRESS_JSON, 'w', encoding='utf-8') as f:
+            json.dump({
+                'model': SELECTED_MODEL,
+                'runs_completed': N_RUNS,
+                'runs_total': N_RUNS,
+                'part1_complete': True,
+                'full_evaluation': full_summary,
+                'ablation_study': dict(ablation),
+                'ablation_configs_done': list(ablation.keys()),
+                'ablation_configs_total': [c[0] for c in configs],
+            }, f, indent=2, ensure_ascii=False, default=str)
 
     # Full of the original result
     ablation['Full (L0-L4)'] = {
@@ -624,7 +726,7 @@ def main():
     print(f"\n{SEP}")
     print("PART 3 — Semantic Camouflage Examples")
     print(SEP)
-    sc_examples = load_sc_examples()
+    sc_examples = load_sc_examples(runs)
     for i, ex in enumerate(sc_examples):
         print(f"\n  Example {i+1}: {ex['query'][:100]}...")
 
@@ -640,7 +742,7 @@ def main():
     # ──  JSON ──────────────────────────────────────────────────────────────
     output = {
         'generated_at':  time.strftime('%Y-%m-%d %H:%M:%S'),
-        'config': {'n_runs': N_RUNS, 'seeds': SEEDS,
+        'config': {'model': SELECTED_MODEL, 'n_runs': N_RUNS, 'seeds': SEEDS,
                    'attack_count': ATTACK_COUNT, 'benign_count': BENIGN_COUNT},
         'full_evaluation':   full_summary,
         'ablation_study':    ablation,
