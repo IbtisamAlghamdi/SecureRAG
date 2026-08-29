@@ -65,22 +65,6 @@ from model_select import add_model_arg, resolve_model, safe_filename
 
 SCRIPT_DIR = Path(__file__).parent
 
-# Maps the COLLAPSED base of pipeline.py's res['layer'] to the 4 defense
-# layers this chart reports. The collapsing is done by layer_base() below
-# using pipeline._block()'s own rule, so every rules_* variant lands here
-# as plain "rules" and every template_injection lands as "template".
-#
-#   res['layer'] value            -> base            -> bucket
-#   "template_injection"             "template"         L1
-#   "sanitization"                   "sanitization"     L1
-#   "rules"                          "rules"            L2
-#   "rules_direct_injection"         "rules"            L2
-#   "rules_prompt_extraction"        "rules"            L2
-#   "rules_role_redefinition"        "rules"            L2
-#   "rules_indirect_attack"          "rules"            L2
-#   "rules_data_exfiltration"        "rules"            L2
-#   "anomaly"                        "anomaly"          L3
-#   "semantic"                       "semantic"         L4
 BASE_TO_LAYER = {
     "template":     "L1",
     "sanitization": "L1",
@@ -95,21 +79,12 @@ NOT_A_BLOCK = {"none", "error", "clean", "baseline"}
 BUCKET_KEYS = ("L1", "L2", "L3", "L4")
 REACHED_KEY = "none (reached model)"
 
-
 def layer_base(layer: str) -> str:
-    """EXACTLY pipeline._block()'s collapsing rule -- kept identical on
-    purpose so this script cannot drift from what the pipeline emits."""
+    """EXACTLY pipeline._block()'s collapsing rule -- kept identical on purpose so this script cannot."""
     return layer.split("_")[0] if "_" in layer else layer
 
-
 def bucket_counts(raw_layer_values: dict) -> dict:
-    """Single source of truth for turning raw res['layer'] tallies into the
-    4 reported buckets. Both the live run and --from-json go through this
-    function, so the chart and the JSON can never disagree.
-
-    Raises on any layer value it does not recognise -- an unmapped block
-    must fail loudly, not vanish into an 'other' bucket. That silent
-    'other' bucket is precisely what produced the wrong L2=232 figure."""
+    """Single source of truth for turning raw res['layer'] tallies into the 4 reported buckets."""
     counts = {k: 0 for k in BUCKET_KEYS}
     counts[REACHED_KEY] = 0
     unknown = {}
@@ -134,13 +109,10 @@ def bucket_counts(raw_layer_values: dict) -> dict:
         )
     return counts
 
-
 def rules_breakdown(raw_layer_values: dict) -> list:
-    """Which rule types make up L2 -- reported because 'L2 blocked 720' on
-    its own hides that it is four distinct violation types."""
+    """Which rule types make up L2 -- reported because 'L2 blocked 720' on its own hides that it is."""
     rows = [(k, v) for k, v in raw_layer_values.items() if layer_base(k) == "rules"]
     return sorted(rows, key=lambda kv: -kv[1])
-
 
 def report(counts, raw, total):
     print("Per-layer blocks (direct measurement, this exact run):")
@@ -166,14 +138,8 @@ def report(counts, raw, total):
         for k, v in br:
             print(f"  {k:28s} {v:5d}  ({100*v/l2:5.1f}% of L2)")
 
-
 def cross_check(counts, selected_model, seed):
-    """The ablation study gives the same quantity by a different route:
-    marginal contribution = blocked(config N) - blocked(config N-1). Because
-    blocking is sequential (each query stops at the first layer that catches
-    it), the two methods are mathematically equivalent when both are valid.
-    Printing them side by side turns that equivalence into a check rather
-    than an assumption."""
+    """The ablation study gives the same quantity by a different route: marginal contribution =."""
     thesis_path = Path("outputs") / "thesis_v2" / safe_filename(selected_model) / "thesis_results.json"
     if not thesis_path.exists():
         print(f"\n  ({thesis_path} not found -- cross-check skipped)")
@@ -205,7 +171,6 @@ def cross_check(counts, selected_model, seed):
         print("\n  The two methods DIFFER. The direct measurement above is the")
         print("  one to report: it counts which layer actually fired on each")
         print("  query, rather than inferring it from cumulative totals.")
-
 
 def draw(counts, selected_model, seed, total, raw):
     labels = ["L1\nSanitization", "L2\nRules", "L3\nAnomaly", "L4\nSemantic"]
@@ -244,7 +209,6 @@ def draw(counts, selected_model, seed, total, raw):
     plt.close(fig)
     print(f"\nChart -> {png}")
 
-
 def save_json(counts, raw, selected_model, seed, total, out_path=None):
     out = {
         "model": selected_model,
@@ -258,20 +222,14 @@ def save_json(counts, raw, selected_model, seed, total, out_path=None):
                 "Bucketed via pipeline._block()'s own layer.split('_')[0] "
                 "rule, so all rules_* variants count as L2.",
     }
-    # In --from-json mode the caller passes the file it read, so the
-    # corrected counts overwrite that same file rather than creating a
-    # second JSON under a re-derived name.
     if out_path is None:
         out_path = SCRIPT_DIR / f"layer_effectiveness__{safe_filename(selected_model)}.json"
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
     print(f"\nSaved -> {out_path}")
 
-
 def from_json(path):
-    """Re-bucket and redraw from a JSON this script already wrote. No model
-    load, no re-run -- the raw per-query res['layer'] tallies are already
-    stored, so a bucketing bug is fixable without repeating the run."""
+    """Re-bucket and redraw from a JSON this script already wrote."""
     d = json.load(open(path, encoding="utf-8"))
     raw = d.get("raw_layer_values")
     if not raw:
@@ -289,7 +247,6 @@ def from_json(path):
     save_json(counts, raw, selected_model, seed, total, out_path=Path(path))
     cross_check(counts, selected_model, seed)
     draw(counts, selected_model, seed, total, raw)
-
 
 def live_run(args):
     from src.config import settings
@@ -335,7 +292,6 @@ def live_run(args):
     save_json(counts, raw, selected_model, args.seed, total)
     cross_check(counts, selected_model, args.seed)
     draw(counts, selected_model, args.seed, total, raw)
-
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__,

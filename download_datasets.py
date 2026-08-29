@@ -1,18 +1,4 @@
-"""
-Dataset Downloader for SecureRAG
-=================================
-It loads and prepares academic datasets:
-  1. BEIR/NQ  — Natural Questions (Wikipedia-based QA)
-  2. BEIR/SciFact — Scientific fact checking
-  3. BEIR/FiQA  — Financial QA (optional)
-
-Usage:
-  python3 download_datasets.py --dataset nq
-  python3 download_datasets.py --dataset scifact
-  python3 download_datasets.py --all
-
-Files are saved in: data/corpus/
-"""
+"""Dataset Downloader for SecureRAG ================================= It loads and prepares academic datasets: 1."""
 
 import os
 import json
@@ -61,7 +47,6 @@ DATASETS = {
     },
 }
 
-
 def download_with_progress(url: str, dest: Path):
     """Download with a simple progress bar"""
     print(f"  📥 Downloading from: {url}")
@@ -80,13 +65,9 @@ def download_with_progress(url: str, dest: Path):
         print(f"\n  ❌ Download failed: {e}")
         return False
 
-
 def extract_corpus_to_txt(dataset_name: str, data_path: Path,
                            max_docs: int, max_queries: int):
-    """
-    It extracts documents and questions from BEIR format and converts them to .txt files
-    into the data/corpus/ folder to work directly with SecureRAG
-    """
+    """It extracts documents and questions from BEIR format and converts them to .txt files into the."""
     corpus_file  = data_path / "corpus.jsonl"
     queries_file = data_path / "queries.jsonl"
 
@@ -145,7 +126,6 @@ def extract_corpus_to_txt(dataset_name: str, data_path: Path,
 
     return docs_saved, queries_saved
 
-
 def download_dataset(name: str):
     """Download and prepare the complete dataset"""
     if name not in DATASETS:
@@ -197,7 +177,6 @@ def download_dataset(name: str):
 
     return docs > 0
 
-
 def show_corpus_status():
     """Display the current corpus status"""
     print(f"\n{'='*60}")
@@ -226,7 +205,6 @@ def show_corpus_status():
             print(f"  📋 {f.name:<40} {count} queries")
 
     print(f"{'='*60}\n")
-
 
 def delete_cache():
     """Delete the cache to free up space"""

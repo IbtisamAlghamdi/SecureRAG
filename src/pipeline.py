@@ -1,21 +1,4 @@
-"""
-SecureRAG Pipeline — System Boundaries Architecture
-====================================================
-It integrates all layers of defense into a single pipeline that implements the concept of:
-"System Boundaries" — the structural separation of data and commands
-
-The five layers of defense:
-
-L0: ARS Pre-screening — Immediate initial risk assessment
-
-L1: Sanitization — Input sanitization + Channel separation
-
-L2: Rule-Based Filter — Detection of attack structural patterns
-
-L3: Anomaly Detection — Multidimensional statistical analysis
-
-L4: Output Guardrailing — Semantic guarding of outputs
-"""
+"""SecureRAG Pipeline — System Boundaries Architecture."""
 
 import time
 import os
@@ -49,20 +32,11 @@ BLOCK_MESSAGES = {
     "template_injection":      "🛡️ [L1-SANITIZE] Blocked: Template injection attempt targeting system channel.",
 }
 
-
 class SecureRAG:
-    """
-SecureRAG Framework — A five-layer defense built on System Boundaries    """
+    """SecureRAG Framework — A five-layer defense built on System Boundaries."""
 
     def __init__(self, enable_defenses: bool = True, model_path: str = None):
-        """
-        `model_path` lets a caller pick which downloaded GGUF model to use
-        for the generator (see model_select.py) WITHOUT touching anything
-        else -- defense thresholds, corpus, retrieval, chunking all come
-        from settings.py exactly the same way regardless of model choice,
-        so swapping models is a true apples-to-apples comparison. Defaults
-        to whatever settings.LLM_MODEL_PATH currently points to.
-        """
+        """`model_path` lets a caller pick which downloaded GGUF model to use for the generator (see."""
         self.enable_defenses = enable_defenses
         self.embedder  = Embedder()
         self.retriever = FaissRetriever(
@@ -110,9 +84,6 @@ SecureRAG Framework — A five-layer defense built on System Boundaries    """
 
         return "LOW"
 
-    # ─────────────────────────────────────────────────────────────────────────
-    # RAG Context Retrieval
-    # ─────────────────────────────────────────────────────────────────────────
     def _get_rag_context(self, query: str) -> str:
         """
         Retrieve context from a trusted knowledge base.

@@ -1,11 +1,4 @@
-"""
-Adaptive Risk Sensor (ARS) — Layer 3: Statistical Boundary Analysis
-
-====================================================================
-Analyzes query structure across 6 statistical dimensions to detect hidden attacks that bypass traditional text filters.
-
-Contribution: ARS detects attacks that appear linguistically "normal" but have a suspicious structural design.
-"""
+"""Adaptive Risk Sensor (ARS) — Layer 3: Statistical Boundary Analysis."""
 
 import re
 import math
@@ -123,17 +116,8 @@ CONTEXT_POISONING_SIGNALS = [
     r"\bHIDDEN\s+INSTRUCTION\b",
 ]
 
-
 def compute_anomaly_score(text: str) -> float:
-    """
-   ARS — Calculating the Abnormality Score across 6 Dimensions:
-    1. Length and Structural Complexity
-    2. (Risk Density)
-    3. (Obfuscation Detection)
-    4. (Staged Attacks)
-    5. (Psychological Manipulation)
-    6. (Context Poisoning Signals)
-    """
+    """ARS — Calculating the Abnormality Score across 6 Dimensions: 1."""
     score = 0.0
     text_lower = text.lower()
 
@@ -245,10 +229,8 @@ def compute_anomaly_score(text: str) -> float:
 
     return round(score, 2)
 
-
 def is_anomalous(score: float) -> bool:
     return score > settings.get_anomaly_threshold()
-
 
 def get_ars_report(text: str) -> Dict:
     """ARS Detailed Report on Academic Documentation"""
@@ -315,7 +297,6 @@ CAMOUFLAGE_PATTERNS = [
     (r"now\s+tell\s+me|now\s+reveal\s+(what|your|the)",                      9.0,  "drift_now_reveal"),
     (r"i\s+(really\s+)?(appreciate|trust)\s+(you|your\s+help).{0,60}(tell|reveal|show|what)", 8.0, "drift_trust_ask"),
 ]
-
 
 def _check_camouflage(text: str) -> float:
     """Reveals hidden camouflage attacks — SecureRAG v2"""

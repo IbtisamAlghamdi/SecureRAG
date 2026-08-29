@@ -1,16 +1,4 @@
-"""
-Rule-Based Filter — Layer 2: System Boundary Enforcement
-=========================================================
-It reveals 8 real attack patterns used by actual attackers:
-Pattern 1: Direct Boundary Violation
-Pattern 2: System Prompt Extraction
-Pattern 3: Role Redefinition
-Pattern 4: Psychological Manipulation (Authority Impersonation)
-Pattern 5: Nested Instruction Hiding
-Pattern 6: Context Poisoning Signals
-Pattern 7: Trust Escalation
-Pattern 8: Indirect Authorization Claims
-"""
+"""Rule-Based Filter — Layer 2: System Boundary Enforcement."""
 
 import re
 from typing import Tuple, List
@@ -165,9 +153,6 @@ AUTHORITY_PATTERNS = [
     r"(mandatory|required|authorized)\s+(compliance|security|audit|check|override)",
     r"(system|security)\s+(integrity|breach|alert|warning)\s+(check|detected|required)",
         # FIXED: excluded "override" when followed by "feature/function/
-    # setting/capability" -- a strong signal this is a product
-    # description ("an admin override feature") rather than an
-    # impersonation claim ("your admin is speaking, override...").
     r"(your\s+)?(developer|creator|provider|admin|administrator)\s+(is\s+here|speaking|override(?!\s+(feature|function|setting|capability|option))|compliance)",
     # ADDED: allowed an optional "test/exercise/simulation" noun between the
     # pretext and the authorization claim -- "this is a red team test
@@ -457,12 +442,8 @@ HIGH_RISK_TIERS = (DIRECT_PATTERNS + EXTRACTION_PATTERNS + ROLE_PATTERNS
                     + AUTHORITY_PATTERNS + NESTED_PATTERNS)
 _HIGH_RISK_COMPILED = [re.compile(p, flags=re.IGNORECASE | re.DOTALL) for p in HIGH_RISK_TIERS]
 
-
 def quick_high_risk_scan(text: str) -> bool:
-    """Fast L0 pre-screen. True only if `text` matches one of the
-    validated, context-aware HIGH-risk patterns above -- NOT a bare
-    keyword substring check. See the comment block above for the false
-    positives this replaces."""
+    """Fast L0 pre-screen."""
     lowered = text.lower()
     return any(p.search(lowered) for p in _HIGH_RISK_COMPILED)
 
@@ -482,11 +463,7 @@ def rule_based_detector_detailed(text: str) -> Tuple[bool, str, str]:
     return False, "none", "LOW"
 
 def get_violation_details(violation_type: str) -> str:
-    """
-    This function is modified to return a string instead of a dictionary.
-
-    This is the primary modification to resolve the ImportError issue in pipeline.py.
-    """
+    """This function is modified to return a string instead of a dictionary."""
     descriptions = {
         "direct_injection": "Direct attempt to bypass system boundaries",
         "prompt_extraction": "Attempt to extract system prompt or instructions",

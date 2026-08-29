@@ -19,14 +19,6 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
 
-# ── Model selection ──────────────────────────────────────────────────────
-# Resolved once, at import time, so every output path below can be
-# namespaced by model -- running this once per model (Mistral-7B,
-# Llama-3.2-3B, Phi-3.5-Mini, ...) never overwrites another model's
-# results. Nothing else in this script changes based on which model is
-# selected: same thresholds, same corpus, same prompt template (see
-# SecureRAG(model_path=...) in src/pipeline.py) -- a true model-only
-# comparison.
 _arg_parser = argparse.ArgumentParser(
     description="SecureRAG thesis evaluation -- 5-seed multirun + ablation study."
 )
@@ -77,13 +69,11 @@ def wilson_ci(successes: int, n: int) -> Tuple[float, float]:
     margin = (z * math.sqrt(p*(1-p)/n + z**2/(4*n**2))) / denom
     return round(max(0, centre - margin)*100, 2), round(min(1, centre + margin)*100, 2)
 
-
 def mcnemar_test(b: int, c: int = 0) -> Tuple[float, str]:
     if b + c == 0: return 0.0, "N/A"
     chi2  = ((abs(b - c) - 1)**2) / (b + c)
     p_str = "< 0.001" if chi2 > 10.83 else "< 0.05" if chi2 > 3.84 else ">= 0.05"
     return round(chi2, 2), p_str
-
 
 def generate_dataset(seed: int):
     random.seed(seed)
@@ -113,13 +103,11 @@ def generate_dataset(seed: int):
 # append, keeping the rest of the tier name intact.
 _OBF_SUFFIXES = ('_base64', '_zwsp', '_homoglyph', '_context_wrap')
 
-
 def _base_tier_name(atype: str) -> str:
     for suf in _OBF_SUFFIXES:
         if atype.endswith(suf):
             return atype[:-len(suf)]
     return atype
-
 
 def evaluate(rag, attacks, benign, label=""):
     blocked = 0
@@ -207,9 +195,6 @@ class AblationRAG(SecureRAG):
                 if det:
                     return self._block('rules', start, rr)
 
-            # Computed unconditionally (cheap) so both L3's gate and L4's
-            # gate below can use it regardless of which ablation config is
-            # active -- matches src/pipeline.py.
             score = compute_anomaly_score(query)
 
             if self.l3:
@@ -308,7 +293,6 @@ def plot_multirun_summary(runs, mean_asr, std_asr,
     plt.close()
     print(f"  Saved → {path}")
 
-
 def plot_ablation(ablation: Dict):
     """Figure 2: Ablation Study"""
     names = list(ablation.keys())
@@ -358,7 +342,6 @@ def plot_ablation(ablation: Dict):
     plt.close()
     print(f"  Saved → {path}")
 
-
 def plot_per_category(per_cat_avg: Dict):
     """Figure 3: DR per category — multi-run average with std"""
     cats     = sorted(per_cat_avg.keys())
@@ -402,9 +385,6 @@ def plot_per_category(per_cat_avg: Dict):
     plt.savefig(path, dpi=150, bbox_inches='tight')
     plt.close()
     print(f"  Saved → {path}")
-
-
-
 
 def make_latex(full, ablation, sc_examples):
     ma   = full['ASR_mean'];    sa  = full['ASR_std']
@@ -575,11 +555,6 @@ def main():
     print("PART 1 — 5-Run Full Evaluation")
     print(SEP)
 
-    # Incremental per-run snapshot (including the per-category breakdown)
-    # written to disk after EACH run finishes -- so you can inspect
-    # per_cat for Run 1/2/... on outputs/thesis_v2/<model>/progress.json
-    # without waiting for all N_RUNS to complete, and without starting a
-    # second process that would compete with this one for the model.
     PROGRESS_JSON = os.path.join(OUT_DIR, "progress.json")
 
     rag  = SecureRAG(enable_defenses=True, model_path=settings.LLM_MODEL_PATH)

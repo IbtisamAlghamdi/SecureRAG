@@ -30,7 +30,6 @@ from src.config import settings
 DATA_DIR = Path(__file__).parent / "data"
 QUERY_FILES = ["beir_nq_queries.txt", "beir_scifact_queries.txt", "beir_fiqa_queries.txt"]
 
-
 def ars_prescreen(query):
     try:
         score = quick_high_risk_scan(query)
@@ -42,7 +41,6 @@ def ars_prescreen(query):
     except Exception:
         pass
     return "LOW"
-
 
 def pre_l4_blocked(query):
     risk_level = ars_prescreen(query)
@@ -61,7 +59,6 @@ def pre_l4_blocked(query):
     if score > eff * 2.0:
         return True, "L3_anomaly"
     return False, None
-
 
 def main():
     found_any = False

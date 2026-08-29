@@ -1,14 +1,4 @@
-"""
-Input Sanitization & Channel Separation — Layer 1 of SecureRAG Defense
-=======================================================================
-The concept of "channel separation" is applied:
-
-- Data Channel: What the user sends as content
-
-- Command Channel: Static system instructions
-
-A successful attack requires merging the two channels—this layer prevents this merging.
-"""
+"""Input Sanitization & Channel Separation — Layer 1 of SecureRAG Defense."""
 
 import re
 import base64
@@ -78,7 +68,6 @@ UNICODE_LOOKALIKE_MAP = {
     '\ufeff': '',  # BOM
 }
 
-
 def _normalize_unicode(text: str) -> str:
     """Unicode normalization and prevention of lookalike-character (homoglyph) attacks"""
     # NFC normalization first
@@ -90,13 +79,8 @@ def _normalize_unicode(text: str) -> str:
     text = ''.join(c for c in text if unicodedata.category(c) != 'Cc' or c in '\n\r\t')
     return text
 
-
 def _decode_base64_if_attack(text: str) -> Tuple[str, bool]:
-    """
-    Detecting and decrypting Base64 — whether the entire text is Base64
-
-    or Base64 is embedded within a sentence (the most common pattern in real-world attacks).
-    """
+    """Detecting and decrypting Base64 — whether the entire text is Base64 or Base64 is embedded within."""
     ATTACK_KEYWORDS = [
         'ignore', 'bypass', 'jailbreak', 'system', 'instruction',
         'reveal', 'override', 'forget', 'admin', 'password',
@@ -147,11 +131,9 @@ def _decode_base64_if_attack(text: str) -> Tuple[str, bool]:
 
     return text, False
 
-
 def _decode_html_entities(text: str) -> str:
     """Decoding HTML entities to uncover hidden attacks"""
     return html.unescape(text)
-
 
 def _decode_hex_escapes(text: str) -> str:
     """Decode \\xNN hex-escape sequences back to their characters, the same
@@ -177,13 +159,8 @@ def _decode_hex_escapes(text: str) -> str:
 
     return re.sub(r'\\x([0-9a-fA-F]{2})', _repl, text)
 
-
 def _remove_template_injections(text: str) -> str:
-    """
-    Removes Template Injection attempts targeting Mistral/Llama templates.
-
-    This is a direct application of Channel Separation — preventing the user from modifying the system's help channel.
-    """
+    """Removes Template Injection attempts targeting Mistral/Llama templates."""
     # Remove attempts to break Mistral's prompt template
     text = re.sub(r'\[/?INST\]', '[FILTERED]', text, flags=re.IGNORECASE)
     text = re.sub(r'<</?SYS>>', '[FILTERED]', text, flags=re.IGNORECASE)
@@ -197,14 +174,8 @@ def _remove_template_injections(text: str) -> str:
     text = re.sub(r'\$\{.*?' + _suspicious + r'.*?\}',   '[FILTERED]', text, flags=re.DOTALL | re.IGNORECASE)
     return text
 
-
 def sanitize_input(text: str) -> str:
-    """
-    Channel Separation Defense Line:
-
-    Ensures that the input remains in the "data channel" and does not infiltrate the "command channel".
-
-    """
+    """Channel Separation Defense Line: Ensures that the input remains in the "data channel" and does."""
     if not text or not text.strip():
         return text
 
@@ -279,7 +250,6 @@ def sanitize_input(text: str) -> str:
         text = text[:MAX_QUERY_LENGTH] + " [TRUNCATED_FOR_SECURITY]"
 
     return text.strip()
-
 
 def get_sanitization_report(original: str, sanitized: str) -> dict:
     """Sterilization report for academic documentation"""

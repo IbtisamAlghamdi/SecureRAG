@@ -1,36 +1,5 @@
 #!/usr/bin/env python3
-"""
-generate_final_charts.py
---------------------------
-Regenerates every reporting chart from REAL, already-verified output files
--- never hardcodes a number. Written after finding that several PNG/PDF
-charts floating around (confusion_matrix, layer_effectiveness,
-latency_analysis_v2) had numbers that did not match thesis_results.json at
-all (e.g. a stale 909-attack total instead of the real 912 for seed=42,
-0.0% FPR shown for all 5 runs when 2 of 5 actually had 0.3%). This script
-is the single source of truth going forward: point it at the real output
-files, it reads them, computes what a chart needs, and saves everything
-into one dedicated folder so nothing gets mixed up with old exports again.
-
-Inputs (all optional except --thesis-results; a chart is skipped with a
-clear message, not faked, if its input file is missing):
-    --thesis-results   outputs/thesis_v2/<model>/thesis_results.json
-                        (required -- internal 5-run + ablation data)
-    --external-summary bipia_external_summary__<model>.json
-                        (external ASR -- enables charts 07/09)
-    --external-fpr-summary bipia_external_fpr_summary__<model>.json
-                        (external FPR -- enables chart 08)
-    --compliance-csv    compliance_classified__<model>.csv
-                        (classify_true_compliance.py's per-row output --
-                        enables the corrected "true compliance" bar on
-                        chart 09; the count is computed live from the CSV
-                        (likely_complied rows / n_total), never hardcoded)
-    --out-dir           final_charts/<model>/  (default)
-
-Usage:
-    python3 generate_final_charts.py --model Mistral-7B
-    python3 generate_final_charts.py --model Llama-3.2-3B
-"""
+"""generate_final_charts.py -------------------------- Regenerates every reporting chart from REAL."""
 
 import argparse
 import csv
@@ -47,18 +16,15 @@ import numpy as np
 plt.rcParams.update({'axes.facecolor': '#f9f9f9'})
 C_SAFE, C_DANGER, C_NEUTRAL, C_ACCENT = '#6b9e8a', '#c0392b', '#5c7a9e', '#e67e22'
 
-
 def load_json(path):
     if not path or not Path(path).exists():
         return None
     return json.load(open(path, encoding="utf-8"))
 
-
 def load_compliance_csv(path):
     if not path or not Path(path).exists():
         return None
     return list(csv.DictReader(open(path, encoding="utf-8")))
-
 
 def savefig(fig, out_dir, name):
     out_path = Path(out_dir) / name
@@ -66,11 +32,8 @@ def savefig(fig, out_dir, name):
     plt.close(fig)
     print(f"  saved -> {out_path}")
 
-
 def chart_ablation(thesis, out_dir):
-    """01 -- rebuild of the (already-correct) ablation chart, from the
-    same thesis_results.json, so it lives alongside everything else and
-    is guaranteed to match."""
+    """01 -- rebuild of the (already-correct) ablation chart, from the same thesis_results.json, so it."""
     abl = thesis["ablation_study"]
     names = ["L0 only", "L0+L1", "L0+L1+L2", "L0+L1+L2+L3", "Full (L0-L4)"]
     names = [n for n in names if n in abl]
@@ -102,7 +65,6 @@ def chart_ablation(thesis, out_dir):
 
     plt.tight_layout()
     savefig(fig, out_dir, "01_ablation_study.png")
-
 
 def chart_multirun(thesis, out_dir):
     """02 -- per-seed ASR/FPR/latency, straight from raw_runs (no re-derivation)."""
@@ -144,7 +106,6 @@ def chart_multirun(thesis, out_dir):
     plt.tight_layout()
     savefig(fig, out_dir, "02_multirun_summary.png")
 
-
 def chart_per_category(thesis, out_dir):
     """03 -- per-category DR/ASR mean+-std, straight from per_cat_avg."""
     cats = thesis["full_evaluation"]["per_cat_avg"]
@@ -165,13 +126,8 @@ def chart_per_category(thesis, out_dir):
     plt.tight_layout()
     savefig(fig, out_dir, "03_detection_by_category.png")
 
-
 def chart_confusion_matrix(thesis, out_dir):
-    """04 -- built from the FIRST logged run (labelled by its real seed,
-    not assumed to be 42), using its actual blocked/fp counts. No number
-    here is invented: TP/FN come from that run's 'blocked' field against
-    the real attack count, FP/TN from its 'fp' field against the real
-    benign count."""
+    """04 -- built from the FIRST logged run (labelled by its real seed, not assumed to be 42), using."""
     cfg = thesis["config"]
     run0 = thesis["full_evaluation"]["raw_runs"][0]
     seed0 = cfg["seeds"][0]
@@ -199,25 +155,12 @@ def chart_confusion_matrix(thesis, out_dir):
     plt.tight_layout(rect=[0, 0.03, 1, 1])
     savefig(fig, out_dir, "04_confusion_matrix.png")
 
-
 def chart_layer_effectiveness(thesis, out_dir, layer_measurement=None):
-    """05 -- PREFERS a real, direct per-query measurement (produced by
-    measure_layer_effectiveness.py, which tallies res['layer'] for every
-    attack in an actual run) when one is supplied. Falls back to deriving
-    marginal contribution from the ablation study's cumulative deltas
-    ONLY if that direct measurement file is not available -- and labels
-    the chart accordingly either way, so it is never ambiguous which
-    method produced the numbers."""
+    """05 -- PREFERS a real, direct per-query measurement (produced by measure_layer_effectiveness.py."""
     layer_names = ["L1\nSanitization", "L2\nRules", "L3\nAnomaly", "L4\nSemantic"]
 
     if layer_measurement is not None:
         c = layer_measurement["layer_counts"]
-        # Guard against a JSON written by the buggy first version of
-        # measure_layer_effectiveness.py, whose LAYER_BUCKETS matched only the
-        # literal "rules" and swept every rules_<violation_type> variant into
-        # "other" -- under-reporting L2 by 488 blocks on the Mistral-7B run.
-        # Such a file must not be drawn silently; re-bucket it first (no
-        # re-run needed, the raw per-query tallies are stored in the file).
         if c.get("other"):
             raise SystemExit(
                 f"\n  05_layer_effectiveness: this measurement JSON has "
@@ -249,12 +192,8 @@ def chart_layer_effectiveness(thesis, out_dir, layer_measurement=None):
     plt.tight_layout()
     savefig(fig, out_dir, "05_layer_effectiveness.png")
 
-
 def chart_latency_baseline(thesis, out_dir):
-    """06 -- baseline = 'L0 only' config (nothing blocks -> every query
-    reaches the LLM, the real undefended-latency proxy already computed
-    by the ablation study); secure = the 5-run mean latency. Reduction %
-    computed live, not hardcoded."""
+    """06 -- baseline = 'L0 only' config (nothing blocks -> every query reaches the LLM, the real."""
     abl = thesis["ablation_study"]
     if "L0 only" not in abl:
         print("  skip 06_latency_baseline.png -- 'L0 only' missing from ablation_study")
@@ -282,13 +221,8 @@ def chart_latency_baseline(thesis, out_dir):
     plt.tight_layout()
     savefig(fig, out_dir, "06_latency_baseline_vs_securerag.png")
 
-
 def chart_internal_vs_external_asr(thesis, ext_summary, compliance_rows, out_dir):
-    """07 -- ASR comparison ONLY (kept separate from FPR per your request).
-    Internal = 5-run mean. External = the raw run_external_eval.py figure
-    (the 'reached model' proxy). A third bar (true compliance) is added
-    ONLY if a compliance CSV was supplied -- computed live as
-    likely_complied rows / n_total_external_samples, never hardcoded."""
+    """07 -- ASR comparison ONLY (kept separate from FPR per your request)."""
     if ext_summary is None:
         print("  skip 07_internal_vs_external_ASR.png -- no --external-summary file given")
         return
@@ -324,7 +258,6 @@ def chart_internal_vs_external_asr(thesis, ext_summary, compliance_rows, out_dir
     plt.tight_layout()
     savefig(fig, out_dir, "07_internal_vs_external_ASR.png")
 
-
 def chart_internal_vs_external_fpr(thesis, ext_fpr_summary, out_dir):
     """08 -- FPR comparison ONLY (separate chart from ASR, as requested)."""
     if ext_fpr_summary is None:
@@ -347,18 +280,9 @@ def chart_internal_vs_external_fpr(thesis, ext_fpr_summary, out_dir):
     plt.tight_layout()
     savefig(fig, out_dir, "08_internal_vs_external_FPR.png")
 
-
-
-# ─────────────────────────────────────────────────────────────────────────
-# CROSS-MODEL CHARTS (--compare). Each reads two models' real output files
-# and skips with a message if either side is missing -- never substitutes a
-# placeholder value.
-# ─────────────────────────────────────────────────────────────────────────
-
 def _mstats(t):
     fe = t["full_evaluation"]
     return fe["ASR_mean"], fe["ASR_std"], fe["FPR_mean"], fe["FPR_std"], fe["Lat_mean"], fe["Lat_std"]
-
 
 def chart_cmp_internal(models, out_dir):
     """09 -- internal ASR / FPR / latency side by side, with error bars."""
@@ -380,7 +304,6 @@ def chart_cmp_internal(models, out_dir):
         ax.set_ylim(0, max(v + e for v, e in zip(vals, errs)) * 1.28)
     plt.tight_layout()
     savefig(fig, out_dir, "09_cross_model_internal.png")
-
 
 def chart_cmp_external(models, ext, ext_fpr, comp, out_dir):
     """10 -- external detection / reach-rate ASR / true-compliance ASR / FPR."""
@@ -426,11 +349,8 @@ def chart_cmp_external(models, ext, ext_fpr, comp, out_dir):
     plt.tight_layout()
     savefig(fig, out_dir, "10_cross_model_external.png")
 
-
 def chart_cmp_layers(models, ext, ext_fpr, out_dir):
-    """11 -- the architectural result: every cross-model difference sits in L4.
-    Counts come from each run's own layer_distribution, not from any
-    derived quantity."""
+    """11 -- the architectural result: every cross-model difference sits in L4."""
     names = [n for n in models if ext.get(n) and ext_fpr.get(n)]
     if len(names) < 2:
         print("  skip 11_cross_model_layers.png -- need external + FPR summaries for two models")
@@ -464,7 +384,6 @@ def chart_cmp_layers(models, ext, ext_fpr, out_dir):
     plt.tight_layout()
     savefig(fig, out_dir, "11_cross_model_layers.png")
 
-
 def chart_cmp_categories(models, out_dir):
     """12 -- internal per-tier detection, both models on one axis."""
     names = list(models)
@@ -485,7 +404,6 @@ def chart_cmp_categories(models, out_dir):
     ax.legend()
     plt.tight_layout()
     savefig(fig, out_dir, "12_cross_model_by_category.png")
-
 
 def chart_cmp_compliance(models, ext, comp, out_dir):
     """13 -- what actually happened to all 986 attacks, per model."""
@@ -521,11 +439,8 @@ def chart_cmp_compliance(models, ext, comp, out_dir):
     plt.tight_layout()
     savefig(fig, out_dir, "13_compliance_breakdown.png")
 
-
 def chart_cmp_margin(models, ext, comp, out_dir):
-    """14 -- margin sensitivity, recomputed from each compliance CSV. Shows
-    how far the reported compliance figure depends on the tie-break margin,
-    which is the honest way to present an uncalibrated parameter."""
+    """14 -- margin sensitivity, recomputed from each compliance CSV."""
     names = [n for n in models if comp.get(n) and ext.get(n)]
     if not names:
         print("  skip 14_margin_sensitivity.png -- need compliance CSVs")
@@ -552,7 +467,6 @@ def chart_cmp_margin(models, ext, comp, out_dir):
     ax.legend(fontsize=9)
     plt.tight_layout()
     savefig(fig, out_dir, "14_margin_sensitivity.png")
-
 
 def run():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)

@@ -73,12 +73,10 @@ LAYER_LABEL = {
     "anomaly": "L3", "semantic": "L4", "none": "reached model",
 }
 
-
 def label_of(layer):
     if layer.startswith("rules"):
         return "L2"
     return LAYER_LABEL.get(layer, layer)
-
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__,

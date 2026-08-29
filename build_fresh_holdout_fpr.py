@@ -68,7 +68,6 @@ EXISTING_FPR_SET = SCRIPT_DIR / "fpr_set.json"
 DEFAULT_SEED = 9001
 N_SAMPLES = 333  # matches fpr_set.json's own size, for a direct apples-to-apples comparison
 
-
 def load_jsonl(path):
     items = []
     if not path.exists():
@@ -80,7 +79,6 @@ def load_jsonl(path):
                 items.append(json.loads(line))
     return items
 
-
 def load_all_raw_documents():
     docs = []
     for fname in ["email_test.jsonl", "email_train.jsonl",
@@ -90,18 +88,14 @@ def load_all_raw_documents():
                 docs.append(item)
     return docs
 
-
 def already_used_texts():
-    """The exact document text already embedded in fpr_set.json's 333
-    combined_query fields, so we can exclude any raw document that overlaps
-    with what was already used for threshold tuning."""
+    """The exact document text already embedded in fpr_set.json's 333 combined_query fields, so we can."""
     if not EXISTING_FPR_SET.exists():
         print(f"WARNING: {EXISTING_FPR_SET} not found -- cannot check for "
               f"overlap, proceeding without exclusion (less rigorous).")
         return set()
     existing = json.load(open(EXISTING_FPR_SET, encoding="utf-8"))
     return {item["combined_query"] for item in existing}
-
 
 def build(seed: int, n_samples: int):
     rng = random.Random(seed)

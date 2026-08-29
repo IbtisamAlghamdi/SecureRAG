@@ -37,10 +37,8 @@ import sys
 
 from src.config import settings
 
-
 def add_model_arg(parser: argparse.ArgumentParser) -> None:
-    """Attach `--model NAME` to an argparse parser. Kept as a shared
-    helper so every script's --help output looks the same."""
+    """Attach `--model NAME` to an argparse parser."""
     parser.add_argument(
         "--model",
         choices=list(settings.MODELS_CONFIG.keys()),
@@ -49,7 +47,6 @@ def add_model_arg(parser: argparse.ArgumentParser) -> None:
              "will be prompted interactively. Choices: "
              + ", ".join(settings.MODELS_CONFIG.keys()),
     )
-
 
 def _prompt_interactively() -> str:
     models = list(settings.MODELS_CONFIG.keys())
@@ -64,16 +61,8 @@ def _prompt_interactively() -> str:
     idx = int(choice) - 1 if choice.isdigit() and 0 < int(choice) <= len(models) else default_idx
     return models[idx]
 
-
 def resolve_model(name: str = None) -> str:
-    """Given a model name (already validated by argparse `choices`, or
-    None), return the model name to use -- prompting interactively if
-    `name` is None. Sets settings.GGUF_FILE / settings.LLM_MODEL_PATH as
-    a side effect (mirrors chat.py's original select_model()) so callers
-    that read settings directly keep working, and also returns the
-    resolved absolute model path for callers that prefer to pass it
-    explicitly into SecureRAG(model_path=...) (the safer option -- see
-    the LLMEngine fix in src/rag_core/generation/llm_engine.py)."""
+    """Given a model name (already validated by argparse `choices`, or None), return the model name to."""
     selected = name or _prompt_interactively()
 
     if selected not in settings.MODELS_CONFIG:
@@ -90,19 +79,12 @@ def resolve_model(name: str = None) -> str:
 
     return selected
 
-
 def model_path_for(name: str) -> str:
-    """Absolute path for a given model name, without touching settings or
-    prompting. Useful for scripts that loop over all 3 models in one
-    process (e.g. a comparison driver)."""
+    """Absolute path for a given model name, without touching settings or prompting."""
     if name not in settings.MODELS_CONFIG:
         raise ValueError(f"Unknown model '{name}'. Choices: {list(settings.MODELS_CONFIG.keys())}")
     return os.path.join(settings.MODELS_DIR, settings.MODELS_CONFIG[name]["file"])
 
-
 def safe_filename(model_name: str) -> str:
-    """Model name -> filesystem-safe suffix for per-model output files,
-    e.g. "Llama-3.2-3B" -> "Llama-3.2-3B" (already safe), used to keep
-    each model's results in their own file instead of overwriting the
-    previous model's run."""
+    """Model name -> filesystem-safe suffix for per-model output files, e.g."""
     return "".join(c if c.isalnum() or c in "-_." else "_" for c in model_name)

@@ -3,15 +3,6 @@ import numpy as np
 from src.config import settings
 from src.rag_core.embeddings.embedder import Embedder
 
-# Uncovering Dangerous Patterns in Answers — SecureRAG v2
-#
-# Every pattern here has been through the same fix pass as L0/L1/L2: a
-# bare phrase that occurs in ordinary helpful-assistant language is not
-# usable as a leak signal on its own -- it has to be tied to something
-# that only shows up when the model is actually leaking its own prompt,
-# echoing an injected instruction, or complying with a jailbreak framing.
-# Verified against a battery of realistic benign response openers and
-# summaries (see verify_no_model.py) with zero false positives.
 OUTPUT_DANGER_PATTERNS = [
     # FIXED (2 bare phrases here): "my instructions are ..." is ordinary
     # task-following language ("my instructions are to summarize each
@@ -60,22 +51,15 @@ OUTPUT_DANGER_PATTERNS = [
     (r"(ignoring\s+(my\s+)?(previous\s+)?instructions|disregarding\s+(safety|guidelines))", "explicit_bypass"),
 ]
 
-
 def check_output_patterns(response: str) -> tuple:
     """Uncovering dangerous patterns in the generated response"""
     hits = [name for pattern, name in OUTPUT_DANGER_PATTERNS
             if re.search(pattern, response, re.IGNORECASE)]
     return len(hits) > 0, hits
 
-
 def semantic_response_is_suspicious(answer: str, corpus_embeddings,
                                      embedder) -> tuple:
-    """
-    Checks whether the response leaks the system prompt / complies with an
-    injected instruction (check_output_patterns), or semantically deviates
-    from the trusted knowledge base (cosine similarity against the
-    retrieved corpus embeddings). Returns (True, score) if it is doubtful.
-    """
+    """Checks whether the response leaks the system prompt / complies with an injected instruction."""
     # First: dangerous patterns in the answer itself (prompt leakage,
     # explicit compliance with a jailbreak framing).
     pattern_hit, hits = check_output_patterns(answer)
@@ -95,7 +79,6 @@ def semantic_response_is_suspicious(answer: str, corpus_embeddings,
 
     threshold = settings.get_semantic_threshold()
     return (max_sim < threshold), max_sim
-
 
 def query_response_similarity(query: str, answer: str, embedder) -> float:
     """

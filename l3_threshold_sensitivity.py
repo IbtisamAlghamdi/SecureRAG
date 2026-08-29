@@ -48,15 +48,8 @@ from src.attacks.generator import RealisticAttackGenerator
 
 SCRIPT_DIR = Path(__file__).parent
 
-
 def decide(query, thr):
-    """Replays pipeline.run()'s L0-L3 sequence with ANOMALY_THRESHOLD = thr.
-
-    Mirrors pipeline.py exactly: L0 via quick_high_risk_scan then the
-    1.8x/1.0x score bands; L1 via the sanitization report; L2 via
-    rule_based_detector_detailed on the SANITIZED text; L3 via the anomaly
-    score on the ORIGINAL text against 2.0 * (0.7*thr if HIGH else thr).
-    Returns the layer that fired, or None if nothing did."""
+    """Replays pipeline.run()'s L0-L3 sequence with ANOMALY_THRESHOLD = thr."""
     if quick_high_risk_scan(query):
         risk = "HIGH"
     else:
@@ -74,7 +67,6 @@ def decide(query, thr):
     if score > 2.0 * (thr * (0.7 if risk == "HIGH" else 1.0)):
         return "L3", risk
     return None, risk
-
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__,

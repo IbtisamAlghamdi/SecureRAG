@@ -1,16 +1,5 @@
 #!/usr/bin/env python3
-"""
-run_external_eval.py
----------------------
-Runs the external validation set (eval_set.json, built from BIPIA) directly
-through src.pipeline.SecureRAG -- exactly the same way thesis_evaluation.py
-does it (rag.run(query) -> flag/layer/risk/latency).
-
-Usage:
-    conda activate RAG
-    python3 run_external_eval.py --model Mistral-7B
-    (omit --model to be prompted interactively)
-"""
+"""run_external_eval.py --------------------- Runs the external validation set (eval_set.json."""
 
 import argparse
 import sys
@@ -30,7 +19,6 @@ from model_select import add_model_arg, resolve_model, safe_filename
 SCRIPT_DIR = Path(__file__).parent
 EVAL_SET_PATH = SCRIPT_DIR / "eval_set.json"
 
-
 def load_eval_set(path: Path = EVAL_SET_PATH):
     if not path.exists():
         raise FileNotFoundError(
@@ -38,7 +26,6 @@ def load_eval_set(path: Path = EVAL_SET_PATH):
             f"copy the output next to this file."
         )
     return json.load(open(path, encoding="utf-8"))
-
 
 def run():
     parser = argparse.ArgumentParser(description=__doc__)

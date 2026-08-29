@@ -1,32 +1,5 @@
 #!/usr/bin/env python3
-"""
-build_eval_set.py
-------------------
-Builds an external validation set from BIPIA (Microsoft Research) data to
-test SecureRAG against indirect prompt injection attacks that the SecureRAG
-team had no part in designing. This directly addresses the "co-design bias"
-criticism from ACSAC Reviewer B.
-
-Source: https://github.com/microsoft/BIPIA (MIT license for code, CC BY-SA
-for data)
-
-Sources used (test + train combined for maximum diversity):
-- email_test.jsonl / email_train.jsonl   -> 100 real clean emails (context)
-- table_test.jsonl / table_train.jsonl   -> 1,000 real data tables (context)
-- text_attack_test.json / _train.json    -> 150 attack instructions across
-                                             ~30 intent categories
-
-Logic: the attack instruction is inserted into the document text (start /
-middle / end) -- exactly how indirect injection happens in practice via a
-retrieved document. This mirrors the approach already used in your own
-src/attacks/generator.py for context_poisoning and indirect_poisoning
-(which already cites BIPIA as a documentation source) -- but here the
-actual content (documents and attack phrasings) comes from a fully
-independent source that had no role in designing the defense.
-
-Output: eval_set.json -- a list of samples ready to feed directly into
-        SecureRAG.run(query)
-"""
+"""build_eval_set.py ------------------ Builds an external validation set from BIPIA (Microsoft."""
 
 import argparse
 import json
@@ -43,7 +16,6 @@ DATA_DIR = SCRIPT_DIR / "data"
 N_SAMPLES = 1000
 DEFAULT_SEED = 42
 
-
 def load_jsonl(path):
     items = []
     with open(path, encoding="utf-8") as f:
@@ -53,7 +25,6 @@ def load_jsonl(path):
                 items.append(json.loads(line))
     return items
 
-
 def load_contexts():
     contexts = []
     for fname in ["email_test.jsonl", "email_train.jsonl"]:
@@ -61,7 +32,6 @@ def load_contexts():
     for fname in ["table_test.jsonl", "table_train.jsonl"]:
         contexts += load_jsonl(DATA_DIR / fname)
     return [c for c in contexts if c.get("context") and c.get("question")]
-
 
 def load_attacks():
     flat = []
@@ -77,11 +47,9 @@ def load_attacks():
                 })
     return flat
 
-
 def split_sentences(text):
     spans = [m.end() for m in re.finditer(r"[.!?]\s+", text)]
     return spans if spans else [len(text) // 2]
-
 
 def insert_attack(context, attack_str, position, rng):
     if position == "start":
@@ -92,7 +60,6 @@ def insert_attack(context, attack_str, position, rng):
         spans = split_sentences(context)
         cut = rng.choice(spans)
         return "\n".join([context[:cut], attack_str, context[cut:]])
-
 
 def build(seed: int = DEFAULT_SEED):
     # ADDED: the attack STRINGS and documents come from BIPIA's own fixed,

@@ -1,33 +1,5 @@
 #!/usr/bin/env python3
-"""
-quick_sample_test.py
-----------------------
-Fast, stratified-random sanity check for the border-strings + reminder
-defense added to pipeline.py's _get_rag_context() -- does NOT touch that
-code at all, this is a read-only test harness. Runs 50 internal attack
-samples (RealisticAttackGenerator, all 8 tiers) + 50 external attack
-samples (eval_set.json/BIPIA, all attack_category values) through the real
-model, instead of the full 1,001 / 986, so you get a signal in ~100 model
-calls instead of ~2,000.
-
-STRATIFIED, not plain random: with ~8 internal tiers and ~29 external
-categories, a plain random draw of 50 could easily miss a whole category
-entirely (50/29 < 2 on average). This instead guarantees every tier/
-category gets AT LEAST one sample, then fills the rest of the 50 randomly,
-so a category-specific effect (like the border-strings fix, aimed
-specifically at BIPIA's 9 no-self-reference categories) can't hide in an
-unlucky draw.
-
-This is a QUICK SIGNAL, not a replacement for the full run -- 50 samples
-per category average out to 1-2 each, too few for a precise per-category
-rate. Treat a clear swing (e.g. a previously-0% category now blocking
-several of its 1-2 samples) as "worth the full run to confirm", and a
-still-flat 0% as "worth investigating before the full run", not as final
-numbers either way.
-
-Usage:
-    python3 quick_sample_test.py --model Mistral-7B --seed 1
-"""
+"""quick_sample_test.py ---------------------- Fast, stratified-random sanity check for the."""
 
 import argparse
 import csv
@@ -51,7 +23,6 @@ INTERNAL_TIERS = [
     "semantic_camouflage", "context_poisoning", "psychological_manipulation",
     "nested_hiding", "trust_escalation",
 ]
-
 
 def stratified_sample(items_by_group: dict, n_total: int, rng: random.Random) -> list:
     """Guarantee >=1 item per group (if the group is non-empty), then fill
@@ -80,13 +51,11 @@ def stratified_sample(items_by_group: dict, n_total: int, rng: random.Random) ->
     rng.shuffle(picked)
     return picked
 
-
 def build_internal_sample(rng: random.Random) -> list:
     gen = RealisticAttackGenerator()
     by_tier = {t: getattr(gen, t) for t in INTERNAL_TIERS}
     sample = stratified_sample(by_tier, N_INTERNAL, rng)
     return [{"category": tier, "query": query} for tier, query in sample]
-
 
 def build_external_sample(rng: random.Random) -> list:
     if not EVAL_SET_PATH.exists():
@@ -99,7 +68,6 @@ def build_external_sample(rng: random.Random) -> list:
     sample = stratified_sample(by_cat, N_EXTERNAL, rng)
     return [{"category": cat, "query": s["combined_query"], "id": s["id"]}
             for cat, s in sample]
-
 
 def run_batch(rag, samples, label):
     results = []
@@ -119,7 +87,6 @@ def run_batch(rag, samples, label):
               f"{'BLOCKED' if is_blocked else 'reached model'}")
     return results, blocked
 
-
 def print_per_category(results, label):
     by_cat = defaultdict(lambda: {"total": 0, "blocked": 0})
     for r in results:
@@ -130,7 +97,6 @@ def print_per_category(results, label):
     for cat, s in sorted(by_cat.items()):
         rate = 100 * s["blocked"] / s["total"]
         print(f"  {cat:32s} {s['blocked']}/{s['total']:2d}  ({rate:.0f}% blocked)")
-
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)

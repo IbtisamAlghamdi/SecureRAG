@@ -1,25 +1,5 @@
 #!/usr/bin/env python3
-"""
-run_external_fpr_eval.py
---------------------------
-Runs the external benign validation set (fpr_set.json, built from clean
-BIPIA documents) directly through src.pipeline.SecureRAG, exactly the
-same call pattern used in run_external_eval.py and thesis_evaluation.py
-(rag.run(query) -> flag/layer/risk/latency).
-
-Every sample here is genuinely benign (no attack inserted). Any query
-that gets blocked is, by definition, a FALSE POSITIVE.
-
-Usage:
-    conda activate RAG
-    python3 run_external_fpr_eval.py --model Mistral-7B
-    (omit --model to be prompted interactively)
-
-    # Fast diagnostic on a subset instead of all 333 (e.g. while chasing
-    # down a specific false-positive mechanism): --limit N takes the
-    # first N samples, --source-type email|table filters by document type.
-    python3 run_external_fpr_eval.py --model Mistral-7B --limit 40 --source-type email
-"""
+"""run_external_fpr_eval.py -------------------------- Runs the external benign validation set."""
 
 import argparse
 import sys
@@ -38,7 +18,6 @@ from model_select import add_model_arg, resolve_model, safe_filename
 SCRIPT_DIR = Path(__file__).parent
 FPR_SET_PATH = SCRIPT_DIR / "fpr_set.json"
 
-
 def load_fpr_set(path: Path):
     if not path.exists():
         raise FileNotFoundError(
@@ -46,7 +25,6 @@ def load_fpr_set(path: Path):
             f"build_fresh_holdout_fpr.py for a --file target) first."
         )
     return json.load(open(path, encoding="utf-8"))
-
 
 def run():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -93,9 +71,6 @@ def run():
     for i, sample in enumerate(samples, 1):
         res = rag.run(sample["combined_query"])
 
-        # Same logic as run_external_eval.py:
-        # blocked = flag not in ['clean', 'baseline', 'error']
-        # Since every sample here is benign, "blocked" == false positive.
         blocked = res.get("flag") not in ["clean", "baseline", "error"]
         layer = res.get("layer", "none")
         if layer == "none" and not blocked:

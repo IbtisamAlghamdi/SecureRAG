@@ -1,21 +1,5 @@
 #!/usr/bin/env python3
-"""
-diagnose_fpr.py
------------------
-Runs ONLY the 333 benign queries through SecureRAG once (fast -- not the
-full 5-run x 1,334-query evaluation) and logs exactly which query got
-blocked and by which layer, so false positives can be inspected directly.
-
-*** Run this AFTER the current thesis_evaluation.py run finishes (don't
-    run both at once -- loading the model twice will slow both down). ***
-
-Usage:
-    conda activate RAG
-    python3 diagnose_fpr.py --model Mistral-7B
-    python3 diagnose_fpr.py --model Llama-3.2-3B
-    python3 diagnose_fpr.py --model Phi-3.5-Mini
-    (omit --model to be prompted interactively)
-"""
+"""diagnose_fpr.py ----------------- Runs ONLY the 333 benign queries through SecureRAG once (fast."""
 
 import argparse
 import sys
@@ -32,7 +16,6 @@ from model_select import add_model_arg, resolve_model, safe_filename
 
 BENIGN_COUNT = 333
 SEED = 42
-
 
 def run():
     parser = argparse.ArgumentParser(description=__doc__)

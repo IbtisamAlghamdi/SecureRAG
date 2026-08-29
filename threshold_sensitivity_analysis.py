@@ -1,33 +1,5 @@
 #!/usr/bin/env python3
-"""
-threshold_sensitivity_analysis.py
------------------------------------
-Post-hoc sensitivity analysis for SEMANTIC_THRESHOLD (L4). Does NOT re-run
-the model -- it reuses the similarity_score column already logged by
-run_external_eval.py / run_external_fpr_eval.py (see pipeline.py's
-l4_checked/similarity_score, which is recorded for every response L4
-inspects, blocked or not) and asks, for each candidate threshold: "if the
-gate had been set here instead, how many of these SAME already-generated
-responses would have been blocked?"
-
-Why this matters (Reviewer concern: threshold choices insufficiently
-justified, no sensitivity analysis): 0.15 was picked by reasoning from a
-single existing threshold elsewhere in the codebase (see settings.py's
-comment on SEMANTIC_THRESHOLD), not from a systematic sweep. This script
-produces that sweep from real external BIPIA data -- attacks AND benign
-side together, so the FPR/ASR trade-off at each candidate value is visible
-in one place, not tuned to only one side.
-
-Usage:
-    python3 threshold_sensitivity_analysis.py \\
-        --fpr bipia_external_fpr_results__<model>__subset50.csv \\
-        --attack bipia_external_results__<model>__subset50.csv
-
-Only rows where l4_checked=True and similarity_score is populated
-contribute to the L4-specific columns; rows blocked earlier (L0-L3) are
-counted once, as already-decided, in the "overall" columns regardless of
-threshold (changing L4's bar cannot un-block or re-block them).
-"""
+"""threshold_sensitivity_analysis.py ----------------------------------- Post-hoc sensitivity."""
 
 import argparse
 import csv
@@ -37,10 +9,8 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-
 def load(path):
     return list(csv.DictReader(open(path, encoding="utf-8")))
-
 
 def run():
     parser = argparse.ArgumentParser(description=__doc__,

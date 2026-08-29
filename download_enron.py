@@ -51,7 +51,6 @@ SEED = 42  # matches build_eval_set.py's SEED -- reproducible sampling
 CORPUS_DIR.mkdir(parents=True, exist_ok=True)
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-
 def download_with_progress(url: str, dest: Path):
     print(f"  📥 Downloading from: {url}")
 
@@ -69,7 +68,6 @@ def download_with_progress(url: str, dest: Path):
         print(f"\n  ❌ Download failed: {e}")
         return False
 
-
 def download_tarball() -> Path:
     dest = CACHE_DIR / "enron_mail_20150507.tar.gz"
     if dest.exists():
@@ -84,7 +82,6 @@ def download_tarball() -> Path:
         sys.exit(1)
     return dest
 
-
 def extract_body(raw_message: str) -> str:
     """Parse one Enron RFC822-style message and return just the body text."""
     try:
@@ -98,7 +95,6 @@ def extract_body(raw_message: str) -> str:
         return (body or "").strip()
     except Exception:
         return ""
-
 
 def build_corpus(n: int):
     tar_path = download_tarball()

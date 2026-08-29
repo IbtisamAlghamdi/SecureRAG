@@ -1,59 +1,5 @@
 #!/usr/bin/env python3
-"""
-verify_no_model.py
---------------------
-Regression check for L0/L1/L2/L3 that runs WITHOUT loading the LLM, the
-embedder, or FAISS -- i.e. everything that can be verified from pure
-Python/regex logic alone. This mirrors the same boundary that was already
-validated without a model before: L4 (the semantic output guard) depends
-on the real model's response and cannot be simulated here -- that part
-still requires `python3 thesis_evaluation.py` on a machine with the model
-and corpus downloaded (see SETUP.md).
-
-What this script checks, and why each check exists:
-
-1. L0 fix -- the 6 previously-confirmed false positives (queries blocked
-   only because of the old bare-keyword list in pipeline.py) must no
-   longer be classified HIGH risk by the fast pre-screen.
-2. L0/L2 still catch real attacks -- the fix must not have made detection
-   weaker. Runs the full attack side of RealisticAttackGenerator (1,001
-   generated attacks) through L1 (sanitize) + L2 (rule_filter) and reports
-   the block rate, the same layers that were validated with zero
-   detection loss across 6,660 non-model tests previously.
-3. BenignQueryGenerator dynamic generation -- a batch of BENIGN_COUNT
-   queries must be unique (no duplicates), reproducible for a given seed,
-   different across seeds, and must include the benign-but-sensitive
-   category (the one that exposed the L0 bug) rather than avoiding it.
-4. L0/L1/L2/L3 false-positive sweep on a freshly generated benign batch
-   -- reports how many of the dynamically generated (NOT hand-picked, NOT
-   filtered against this system) benign queries would be blocked before
-   ever reaching the model. This is the honest, non-model-dependent lower
-   bound on FPR; the real FPR (including L4) can only be measured by
-   actually running SecureRAG with the model.
-5. L1 template-syntax false positives -- {{ }}/${ }/<% %>/<? ?> patterns
-   used to block ANY question mentioning that syntax (e.g. "explain
-   Jinja2's {{ variable }} syntax"), not just actual injection attempts.
-   Confirmed fixed; real template-injection payloads still caught.
-6. L3 dense-benign stress test -- realistic IT/security questions that
-   legitimately pack several security-adjacent words into one sentence
-   (e.g. "our admin override feature is disabled by default") used to
-   cross the anomaly-score blocking threshold on vocabulary density alone,
-   independent of L0. Confirmed fixed via two changes: generic enterprise
-   vocabulary only counts once corroborated by real attack-flavored words,
-   and the accumulation multiplier requires more corroborating hits.
-7. L4 output-pattern false positives -- several OUTPUT_DANGER_PATTERNS
-   were bare phrases ("Sure, here is...", "as instructed", "I am now
-   going to...") that fire on completely ordinary assistant language.
-   Now requires the phrase to co-occur with an actual sensitive reference
-   (system prompt, hidden instructions, restrictions). Verified real
-   prompt-leak / jailbreak-compliance text is still caught. This matters
-   more now that L4's gate is broader than plain HIGH/MEDIUM (see
-   pipeline.py: it also fires on LOW risk with a nonzero anomaly score,
-   staying risk-adaptive rather than running unconditionally).
-
-Usage:
-    python3 verify_no_model.py
-"""
+"""verify_no_model.py -------------------- Regression check for L0/L1/L2/L3 that runs WITHOUT."""
 
 import sys
 import os
@@ -78,10 +24,8 @@ CONFIRMED_FALSE_POSITIVES = [
     "How can I ignore specific files using a .gitignore configuration?",
 ]
 
-
 def l0_l1_l2_l3_screen(query: str):
-    """Runs everything up to (not including) the LLM call + L4. Returns
-    the risk level and whether L1/L2/L3 alone would block the query."""
+    """Runs everything up to (not including) the LLM call + L4."""
     risk_level = "HIGH" if quick_high_risk_scan(query) else None
 
     sanitized = sanitize_input(query)
@@ -113,7 +57,6 @@ def l0_l1_l2_l3_screen(query: str):
 
     return risk_level, False, "none"
 
-
 def check_l0_fix():
     print(SEP)
     print("1) L0 fix -- previously-confirmed false positives")
@@ -127,7 +70,6 @@ def check_l0_fix():
         print(f"  [{status:20s}] risk={risk:6s} | {q}")
     print(f"\n  Result: {'ALL 6 PASS' if all_pass else 'REGRESSION DETECTED'}\n")
     return all_pass
-
 
 def check_attacks_still_caught():
     print(SEP)
@@ -148,7 +90,6 @@ def check_attacks_still_caught():
     print(f"  {blocked}/{len(attacks)} attacks blocked by L0-L3 alone (no L4) = {rate:.2f}%")
     print("  (L4 -- semantic output guard -- needs the real model and is not")
     print("   simulated here; the true ASR after L4 can only be lower.)\n")
-
 
 def check_benign_generator():
     print(SEP)
@@ -176,7 +117,6 @@ def check_benign_generator():
     print(f"  benign-but-sensitive queries in batch: {len(sensitive_hits)}/333")
     print()
 
-
 def check_fpr_sweep():
     print(SEP)
     print("4) L0-L3 false-positive sweep on a fresh dynamic benign batch (n=333)")
@@ -203,7 +143,6 @@ def check_fpr_sweep():
         for layer, q in fp_details:
             print(f"    [{layer}] {q}")
     print()
-
 
 def check_l1_template_syntax():
     print(SEP)
@@ -241,7 +180,6 @@ def check_l1_template_syntax():
     print(f"  benign false positives: {fps}/{len(benign)}   attacks missed: {misses}/{len(attacks)}\n")
     return fps == 0 and misses == 0
 
-
 def check_l3_dense_benign():
     print(SEP)
     print("6) L3 -- dense-benign IT/security phrasing (vocabulary-density stress test)")
@@ -277,7 +215,6 @@ def check_l3_dense_benign():
             print(f"  WEAK DETECTION (score={score:.1f}, below block point): {q}")
     print(f"  dense-benign false positives: {fails}/{len(dense_benign)}   attacks under-scored: {misses}/{len(attacks)}\n")
     return fails == 0 and misses == 0
-
 
 def check_l4_output_patterns():
     print(SEP)
