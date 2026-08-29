@@ -86,7 +86,7 @@ python3 chat.py
 python3 test_scenarios.py
 ```
 
-### 7. Run the full thesis evaluation (1,334 queries, 5 runs)
+### 7. Run the full evaluation (1,334 queries, 5 runs)
 
 ```bash
 python3 thesis_evaluation.py
@@ -131,7 +131,7 @@ python3 run_external_fpr_eval.py # benign-side external FPR (uses fpr_set.json)
 ## Project Structure
 SecureRAG_Fixed/
 ├── chat.py                        <- Interactive chat interface
-├── thesis_evaluation.py          <- Full academic evaluation (1,334 queries, 5 runs)
+├── thesis_evaluation.py          <- Full evaluation (1,334 queries, 5 runs)
 ├── generate_final_charts.py       <- Build all charts from the real result files
 ├── measure_layer_effectiveness.py <- Per-query measurement of which layer blocked what
 ├── download_datasets.py          <- Download BEIR/NQ datasets

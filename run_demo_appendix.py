@@ -35,7 +35,7 @@ from model_select import add_model_arg, resolve_model, safe_filename
 
 SCRIPT_DIR = Path(__file__).parent
 
-# The exact strings quoted in Appendix B of the thesis. Kept verbatim -- if a query
+# The exact strings quoted in the qualitative demonstration. Kept verbatim -- if a query
 # here stops matching the appendix, the appendix is wrong, not this file.
 BENIGN = [
     ("B.1.1", "Can you explain vector databases in plain language?"),

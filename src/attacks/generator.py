@@ -13,7 +13,7 @@ class RealisticAttackGenerator:
     # audit before the long evaluation run): each of the 8 tiers below used
     # to be a fixed list of exactly 10 hand-written strings -- only 80
     # unique base strings existed across the WHOLE generator. Producing the
-    # 1,001 attacks a thesis run requests forced heavy reuse: one string
+    # 1,001 attacks an evaluation run requests forced heavy reuse: one string
     # measured repeating 25 times in a single 1,001-attack batch (seed=42).
     # This mirrors, on the attack side, the exact duplication bug already
     # fixed on the benign side (see BenignQueryGenerator below) -- caught
