@@ -4,8 +4,9 @@ A five-layer, training-free defense framework that protects Retrieval-Augmented
 Generation systems against prompt injection. It runs entirely on locally deployed
 open-weight models, with no dependency on external APIs.
 
-This repository contains the implementation and the evaluation code accompanying the
-paper submission. It is released for artefact review.
+This repository holds the implementation and the evaluation code for the master's
+thesis *SecureRAG: A Five-Layer Adaptive Defense Framework for Enterprise
+Retrieval-Augmented Generation Systems*.
 
 ---
 
@@ -79,7 +80,7 @@ SecureRAG/
 │
 ├── threshold_sensitivity_analysis.py   sweep of L4's semantic threshold
 ├── l3_threshold_sensitivity.py         sweep of L3's anomaly threshold
-├── generate_final_charts.py            all figures reported in the paper
+├── generate_final_charts.py            all thesis figures
 ├── run_demo_appendix.py                the qualitative demonstration
 ├── verify_no_model.py                  generator integrity checks, no model needed
 │
@@ -90,7 +91,7 @@ SecureRAG/
 
 Result files (`bipia_external_*.csv`, `eval_set.json`, `fpr_set.json`,
 `benign_fpr_diagnosis.csv`, `l3_threshold_sensitivity.json`) are the outputs of the
-reported runs and are kept so every figure can be traced back to data.
+runs reported in the thesis and are kept so every figure can be traced back to data.
 
 ---
 
@@ -121,7 +122,7 @@ python3 l3_threshold_sensitivity.py    # the L3 threshold sweep
 
 ## Reproducibility
 
-Every reported result comes from a single frozen state of the defense code: no module
+Every result reported in the thesis comes from a single frozen state of the defense code: no module
 under `src/defenses/` and no line of `src/pipeline.py` changed between the first
 evaluation run and the last. The evaluation scripts outside `src/` were extended
 during that period; the defense itself was not.
@@ -143,7 +144,7 @@ documented as known, quantified improvements instead.
 ## Requirements
 
 Python 3.11, roughly 8 GB of RAM for Mistral-7B in GGUF, and about 12 GB of disk for
-the models and corpus. Evaluated on a consumer laptop (Apple M4, 24 GB) with Metal
+the models and corpus. Developed and evaluated on an Apple MacBook Air (M4, 24 GB) with Metal
 acceleration; no dedicated GPU is required.
 
 ## License
