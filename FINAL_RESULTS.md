@@ -313,5 +313,5 @@ incapable of producing a false positive.
 
 ---
 
-*Full change history with root cause and verification for every fix: `REVISION_LOG_PART1.md` through
-`REVISION_LOG_PART4.md`. Mistral-only detail: `MISTRAL_7B_FINAL.md`. Working narrative: `نوت_الشغل.md`.*
+*Every figure above is reproducible from this repository: the scripts that produced each are listed in
+`README.md`, and the run outputs they read are kept alongside them.*

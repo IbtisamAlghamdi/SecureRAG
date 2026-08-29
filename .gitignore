@@ -5,3 +5,4 @@ wikiextractor/
 __pycache__/
 *.pyc
 .env
+outputs/

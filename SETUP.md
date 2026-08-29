@@ -72,7 +72,6 @@ picks up every `.txt` file in that directory automatically.
 ### 4. Clear old cache (required before first run)
 
 ```bash
-rm -f data/vector_index.faiss data/docs_cache.json data/embs_cache.npy
 ```
 
 ### 5. Run the chat interface
@@ -125,7 +124,6 @@ python3 diagnose_fpr.py
 python3 build_eval_set.py        # needs BIPIA raw data under data/ (see script docstring)
 python3 run_external_eval.py     # attack-side external ASR
 python3 run_external_fpr_eval.py # benign-side external FPR (uses fpr_set.json)
-python3 compare_chart.py         # internal vs external bar chart
 ```
 
 ---
@@ -143,7 +141,6 @@ SecureRAG_Fixed/
 ├── build_eval_set.py              <- Build external BIPIA attack eval set
 ├── run_external_eval.py           <- Run external BIPIA attack eval (ASR)
 ├── run_external_fpr_eval.py       <- Run external BIPIA benign eval (FPR)
-├── compare_chart.py               <- Internal vs external bar chart
 ├── SETUP.md                       <- This file
 │
 ├── data/
@@ -159,16 +156,12 @@ SecureRAG_Fixed/
 │   ├── beir_nq_queries.txt
 │   ├── beir_scifact_queries.txt
 │   ├── vector_index.faiss         <- Auto-generated (do not upload)
-│   ├── docs_cache.json           <- Auto-generated (do not upload)
 │   └── embs_cache.npy            <- Auto-generated (do not upload)
 │
 ├── models/                        <- GGUF model files (do not upload)
 │   └── mistral-7b-instruct-v0.2.Q4_K_M.gguf
 │
 ├── outputs/
-│   ├── final_evaluation_results_1334.csv
-│   ├── evaluation_report.json
-│   ├── session_stats.json
 │   ├── plots/
 │   │   ├── confusion_matrix.png
 │   │   ├── layer_effectiveness.png
