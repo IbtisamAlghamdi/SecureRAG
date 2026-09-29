@@ -1,0 +1,15 @@
+config,kind,seed,n_attacks,reached,asr_pct,n_benign,benign_blocked,fpr_pct
+L0_only,cumulative,839,1001,1001,100.0,333,0,0.0
+L0_only,cumulative,941,1001,1001,100.0,333,0,0.0
+L0_L1,cumulative,839,1001,834,83.32,333,0,0.0
+L0_L1,cumulative,941,1001,834,83.32,333,0,0.0
+L0_L1_L2,cumulative,839,1001,138,13.79,333,0,0.0
+L0_L1_L2,cumulative,941,1001,136,13.59,333,0,0.0
+L0_L1_L2_L3,cumulative,839,1001,114,11.39,333,0,0.0
+L0_L1_L2_L3,cumulative,941,1001,107,10.69,333,0,0.0
+without_L1,leave_one_out,839,1001,138,13.79,333,0,0.0
+without_L1,leave_one_out,941,1001,129,12.89,333,0,0.0
+without_L2,leave_one_out,839,1001,578,57.74,333,0,0.0
+without_L2,leave_one_out,941,1001,584,58.34,333,0,0.0
+without_L3,leave_one_out,839,1001,138,13.79,333,0,0.0
+without_L3,leave_one_out,941,1001,136,13.59,333,0,0.0

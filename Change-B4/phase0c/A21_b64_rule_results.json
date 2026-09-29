@@ -1,0 +1,106 @@
+{
+  "shape": {
+    "attacks": {
+      "seeds": [
+        42,
+        137,
+        271,
+        413,
+        509
+      ],
+      "detection_pre_l4_mean": 89.37,
+      "detection_pre_l4_std": 0.69,
+      "per_seed": [
+        90.11,
+        89.71,
+        88.31,
+        89.91,
+        88.81
+      ],
+      "blocks_by_layer_total": {
+        "L2": 3541,
+        "L1": 807,
+        "L3": 125
+      }
+    },
+    "benign_internal_generator": {
+      "n": 1665,
+      "blocked": 0,
+      "fpr_pct": 0.0
+    },
+    "benign_bipia": {
+      "n": 333,
+      "blocked": 6,
+      "fpr_pct": 1.8
+    },
+    "benign_real_beir": {
+      "n": 0,
+      "note": "data/beir_*_queries.txt not found"
+    },
+    "technical_conditional": {
+      "n": 200,
+      "blocked": 142,
+      "fpr_pct": 71.0
+    },
+    "technical_population": {
+      "n": 600,
+      "blocked": 73,
+      "fpr_pct": 12.17
+    }
+  },
+  "decode": {
+    "attacks": {
+      "seeds": [
+        42,
+        137,
+        271,
+        413,
+        509
+      ],
+      "detection_pre_l4_mean": 88.43,
+      "detection_pre_l4_std": 0.84,
+      "per_seed": [
+        89.41,
+        88.41,
+        87.31,
+        89.31,
+        87.71
+      ],
+      "blocks_by_layer_total": {
+        "L3": 389,
+        "L1": 807,
+        "L2": 3230
+      }
+    },
+    "benign_internal_generator": {
+      "n": 1665,
+      "blocked": 0,
+      "fpr_pct": 0.0
+    },
+    "benign_bipia": {
+      "n": 333,
+      "blocked": 6,
+      "fpr_pct": 1.8
+    },
+    "benign_real_beir": {
+      "n": 0,
+      "note": "data/beir_*_queries.txt not found"
+    },
+    "technical_conditional": {
+      "n": 200,
+      "blocked": 0,
+      "fpr_pct": 0.0
+    },
+    "technical_population": {
+      "n": 600,
+      "blocked": 0,
+      "fpr_pct": 0.0
+    }
+  },
+  "verdict": {
+    "attack_detection_change_pts": -0.94,
+    "technical_conditional_fpr_change_pts": -71.0,
+    "technical_population_fpr_change_pts": -12.17,
+    "internal_benign_fpr_change_pts": 0.0
+  }
+}

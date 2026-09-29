@@ -1,0 +1,29 @@
+{
+  "model": "Mistral-7B",
+  "seed": 42,
+  "n_attacks": 1001,
+  "layer_counts": {
+    "L1": 159,
+    "L2": 732,
+    "L3": 23,
+    "L4": 6,
+    "none (reached model)": 81
+  },
+  "raw_layer_values": {
+    "rules_direct_injection": 331,
+    "sanitization": 159,
+    "rules": 244,
+    "none": 81,
+    "anomaly": 23,
+    "rules_prompt_extraction": 153,
+    "semantic": 6,
+    "rules_role_redefinition": 4
+  },
+  "l2_breakdown": {
+    "rules_direct_injection": 331,
+    "rules": 244,
+    "rules_prompt_extraction": 153,
+    "rules_role_redefinition": 4
+  },
+  "note": "Direct per-query measurement -- res['layer'] tallied for every attack in this run, not derived from another chart. Bucketed via pipeline._block()'s own layer.split('_')[0] rule, so all rules_* variants count as L2."
+}

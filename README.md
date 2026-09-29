@@ -169,6 +169,170 @@ python3 l3_threshold_sensitivity.py    # the L3 threshold sweep
 
 ---
 
+## Reproducing the results
+
+Every figure and table in Chapter 4 is produced by the scripts below. Run them in
+this order; each writes its own result file, and the numbers to expect are stated
+so a run can be checked rather than trusted.
+
+### Before anything
+
+Install and fetch the models and corpus as in **Getting started** above, then set
+the reported configuration. It is not the file default, and every
+threshold-dependent number will differ without it:
+
+```bash
+export SECURERAG_SEMANTIC_THRESHOLD=0.1495
+export SECURERAG_L4_SCOPE=retrieved
+export SECURERAG_B64_RULE_MODE=decode
+export SECURERAG_ZWSP_MODE=space
+```
+
+If `export` does not reach the process under your shell, prefix each command with
+`env VAR=value ...` instead.
+
+### Two checks that need no model
+
+They take seconds and confirm the installation before anything long starts.
+
+```bash
+python3 verify_no_model.py             # generator integrity
+python3 l3_threshold_sensitivity.py    # the L3 sweep of Appendix C
+```
+
+The sweep should place detection at 89.37 % and the internal false positive rate at
+0.00 % when the anomaly threshold is 15.0.
+
+### 1 — The internal evaluation
+
+```bash
+python3 changeb4/phase5_full_pipeline_seeds.py --model Mistral-7B
+```
+
+Five seeds — 839, 941, 1049, 1151, 1279 — 1,001 attacks and 333 legitimate queries
+each. Expect:
+
+| | Expected |
+|---|---|
+| Attack bypass rate, pooled | 9.99 % — 500 of 5,005 |
+| Input layers alone (L0–L3) | 10.65 % — 533 of 5,005 |
+| False positive rate | 0.00 % — 0 of 1,665 |
+| Blocks by layer | L1 826 · L2 3,523 · L3 123 · L4 33 |
+| Per-seed bypass, L0–L3 | 11.39 · 10.69 · 10.69 · 9.59 · 10.89 |
+
+L0 through L3 read only the query text, so their counts are deterministic and
+should reproduce exactly. L4 inspects generated text at temperature 0.7, so the
+33 it adds may vary by a few; at temperature 0 the pooled bypass moves by 0.20
+points, which is inside the 0.38-point spread between seeds.
+
+### 2 — The ablation
+
+```bash
+python3 changeb4/phase11_ablation_offline.py
+```
+
+No language model is loaded. Seven configurations, false positive rate 0.00 % in
+all seven. Expect bypass of 100.00 % for L0 alone, 83.50 % for L0–L1, 13.11 % for
+L0–L2, 10.65 % for L0–L3; and, removing one layer at a time from the complete
+framework, +47.81 points without L2, +2.48 without L1, +2.46 without L3.
+
+### 3 — Per-variant and per-tier counts
+
+```bash
+python3 changeb4/phase14_variants_and_tiers.py
+```
+
+Base64 96.73 %, zero-width 95.79 %, context-wrapped 91.95 %, plain 88.95 %,
+homoglyph 72.24 %. Of the nine L2 tiers, `direct_injection` accounts for 1,379 of
+the 3,523 rule blocks and `output_hijack` for none.
+
+### 4 — The external benchmark
+
+```bash
+python3 build_eval_set.py
+python3 run_external_eval.py --model Mistral-7B          # defended arm
+python3 changeb4/phase1_external_baseline.py             # undefended arm
+python3 classify_true_compliance.py
+python3 run_external_fpr_eval.py --model Mistral-7B
+```
+
+986 attacks on both arms. Compliance falls from 98 (9.94 %) to 55 (5.58 %), with
+95 % Wilson intervals of [8.22, 11.96] and [4.31, 7.19] — disjoint. McNemar on the
+paired outcomes gives b = 79, c = 36, χ² = 15.34. The external false positive run
+returns 20 of 333 documents (6.01 %), all of them tabular.
+
+### 5 — Real queries and the paired latency
+
+```bash
+python3 changeb4/phase3_real_benign.py
+```
+
+300 human-written queries, none blocked. On the 150 answered in full, 16.83 s
+defended against 16.92 s undefended — a difference of −0.55 %.
+
+### 6 — Compliance on internal attacks
+
+```bash
+python3 changeb4/phase2_internal_compliance.py
+```
+
+200 attacks, 176 blocked before generation, 24 responses delivered. Of the 23
+labelled by hand, one complied and one disclosed the prompt marker.
+
+### 7 — The second model
+
+```bash
+python3 changeb4/phase5_full_pipeline_seeds.py --model Llama-3.2-3B
+```
+
+The four input layers must return 10.65 % again, seed for seed. The output
+guardrail will not: on Llama it adds 170 blocks and 3.18 % false positives, which
+is why its threshold is model-specific.
+
+### 8 — Reference defenses and the trained classifier
+
+```bash
+python3 changeb4/phase6_reference_defenses.py
+python3 changeb4/phase13_classifier_arm.py
+```
+
+### 9 — Knowledge-base poisoning
+
+```bash
+python3 changeb4/phase7_kb_poisoning.py
+```
+
+150 questions against a poisoned index. Disclosure of the system prompt falls from
+10.94 % undefended to 0.00 %; the input layers contribute nothing, because the
+query itself is innocent.
+
+### 10 — Figures and the qualitative demonstration
+
+```bash
+python3 generate_final_charts.py
+python3 run_demo_appendix.py --model Mistral-7B
+```
+
+### What lands where
+
+| Path | Holds |
+|---|---|
+| `Change-B4/phase*/` | the per-phase result files of each step above |
+| `results/` | the per-model artefacts: BIPIA rows and summaries, per-layer tallies, the classified compliance sheets |
+| `eval_set.json`, `fpr_set.json` | the attack and legitimate sets as generated |
+| `evidence/CODE_FINGERPRINT.txt` | the manifest of the code state all of this was run on |
+
+### If a number does not reproduce
+
+Check the four environment variables first: three of the five defense decisions and
+the guardrail threshold are read through them, and the file defaults are different
+on purpose, so that both sides of each choice can be measured from one code state.
+Check next that the seeds are the five evaluation seeds and not the calibration
+seeds. Anything that still differs after that, and that concerns L0 through L3, is
+a real difference rather than sampling: those layers never see generated text.
+
+---
+
 ## Reproducibility
 
 Every result reported in the thesis comes from a single frozen state of the defense

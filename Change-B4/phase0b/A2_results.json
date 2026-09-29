@@ -1,0 +1,252 @@
+{
+  "A2b_heldout_templates": {
+    "split": {
+      "salt": "changeb4",
+      "per_tier": {
+        "conversational_drift": {
+          "full": 154,
+          "dev": 77,
+          "test": 77
+        },
+        "semantic_camouflage": {
+          "full": 181,
+          "dev": 104,
+          "test": 77
+        },
+        "context_poisoning": {
+          "full": 210,
+          "dev": 105,
+          "test": 105
+        },
+        "psychological_manip": {
+          "full": 182,
+          "dev": 95,
+          "test": 87
+        },
+        "nested_hiding": {
+          "full": 182,
+          "dev": 84,
+          "test": 98
+        },
+        "token_smuggling": {
+          "full": 180,
+          "dev": 89,
+          "test": 91
+        },
+        "trust_escalation": {
+          "full": 156,
+          "dev": 85,
+          "test": 71
+        },
+        "indirect_poisoning": {
+          "full": 210,
+          "dev": 115,
+          "test": 95
+        }
+      },
+      "totals": {
+        "full": 1455,
+        "dev": 754,
+        "test": 701
+      }
+    },
+    "halves": {
+      "dev": {
+        "seeds": [
+          42,
+          137,
+          271
+        ],
+        "per_seed_detection_pct": [
+          90.3,
+          88.71,
+          89.73
+        ],
+        "mean": 89.58,
+        "std": 0.66,
+        "per_category_detection_pct": {
+          "context_poisoning": 100.0,
+          "conversational_drift": 100.0,
+          "indirect_poisoning": 97.1,
+          "nested_hiding": 91.3,
+          "psychological_manip": 96.0,
+          "semantic_camouflage": 34.9,
+          "token_smuggling": 99.6,
+          "trust_escalation": 95.2
+        }
+      },
+      "test": {
+        "seeds": [
+          42,
+          137,
+          271
+        ],
+        "per_seed_detection_pct": [
+          89.75,
+          88.73,
+          88.73
+        ],
+        "mean": 89.07,
+        "std": 0.48,
+        "per_category_detection_pct": {
+          "context_poisoning": 100.0,
+          "conversational_drift": 99.0,
+          "indirect_poisoning": 98.2,
+          "nested_hiding": 84.2,
+          "psychological_manip": 95.2,
+          "semantic_camouflage": 34.2,
+          "token_smuggling": 99.3,
+          "trust_escalation": 96.2
+        }
+      }
+    },
+    "gap_dev_minus_test_pts": 0.51
+  },
+  "A2b2_tier_crosstab": {
+    "context_poisoning": {
+      "n": 452,
+      "same_name_l2_tier": "context_poisoning",
+      "blocked_by_same_name_tier_pct": 0.0,
+      "blockers": {
+        "direct_injection": 37.2,
+        "L1": 25.0,
+        "prompt_extraction": 21.9,
+        "nested_hiding": 15.0,
+        "L3": 0.9
+      }
+    },
+    "indirect_poisoning": {
+      "n": 444,
+      "same_name_l2_tier": "indirect_authorization",
+      "blocked_by_same_name_tier_pct": 0.7,
+      "blockers": {
+        "context_poisoning": 43.9,
+        "direct_injection": 23.0,
+        "prompt_extraction": 10.8,
+        "authority_impersonation": 10.6,
+        "L1": 7.7,
+        "L3": 1.8,
+        "reached": 1.6,
+        "indirect_authorization": 0.7
+      }
+    },
+    "nested_hiding": {
+      "n": 398,
+      "same_name_l2_tier": "nested_hiding",
+      "blocked_by_same_name_tier_pct": 16.3,
+      "blockers": {
+        "L1": 32.9,
+        "direct_injection": 23.9,
+        "nested_hiding": 16.3,
+        "prompt_extraction": 12.3,
+        "reached": 11.6,
+        "L3": 3.0
+      }
+    },
+    "token_smuggling": {
+      "n": 395,
+      "same_name_l2_tier": null,
+      "blocked_by_same_name_tier_pct": null,
+      "blockers": {
+        "direct_injection": 74.7,
+        "L1": 21.5,
+        "prompt_extraction": 2.3,
+        "L3": 1.3,
+        "reached": 0.3
+      }
+    },
+    "psychological_manip": {
+      "n": 361,
+      "same_name_l2_tier": "authority_impersonation",
+      "blocked_by_same_name_tier_pct": 39.3,
+      "blockers": {
+        "authority_impersonation": 39.3,
+        "direct_injection": 19.7,
+        "L1": 16.9,
+        "prompt_extraction": 15.2,
+        "reached": 3.9,
+        "indirect_authorization": 3.6,
+        "L3": 1.4
+      }
+    },
+    "semantic_camouflage": {
+      "n": 356,
+      "same_name_l2_tier": null,
+      "blocked_by_same_name_tier_pct": null,
+      "blockers": {
+        "reached": 64.9,
+        "direct_injection": 11.0,
+        "prompt_extraction": 9.8,
+        "L1": 9.6,
+        "L3": 2.8,
+        "nested_hiding": 2.0
+      }
+    },
+    "trust_escalation": {
+      "n": 318,
+      "same_name_l2_tier": "trust_escalation",
+      "blocked_by_same_name_tier_pct": 41.2,
+      "blockers": {
+        "trust_escalation": 41.2,
+        "prompt_extraction": 28.6,
+        "direct_injection": 9.4,
+        "L1": 6.6,
+        "reached": 6.0,
+        "role_redefinition": 4.7,
+        "L3": 3.5
+      }
+    },
+    "conversational_drift": {
+      "n": 279,
+      "same_name_l2_tier": null,
+      "blocked_by_same_name_tier_pct": null,
+      "blockers": {
+        "direct_injection": 48.4,
+        "prompt_extraction": 36.2,
+        "L1": 8.2,
+        "L3": 6.8,
+        "reached": 0.4
+      }
+    }
+  },
+  "A2c_public_sets": {
+    "tensortrust_hijacking": {
+      "n": 776,
+      "blocked_pre_l4": 460,
+      "detection_pre_l4_pct": 59.28,
+      "by_layer": {
+        "L3": 218,
+        "reached": 316,
+        "L2": 141,
+        "L1": 101
+      },
+      "available": true,
+      "source": "https://raw.githubusercontent.com/HumanCompatibleAI/tensor-trust-data/main/benchmarks/hijacking-robustness/v1/hijacking_robustness_dataset.jsonl",
+      "provenance": "written by third-party players of the public Tensor Trust game"
+    },
+    "tensortrust_extraction": {
+      "n": 570,
+      "blocked_pre_l4": 157,
+      "detection_pre_l4_pct": 27.54,
+      "by_layer": {
+        "reached": 413,
+        "L2": 112,
+        "L3": 19,
+        "L1": 26
+      },
+      "available": true,
+      "source": "https://raw.githubusercontent.com/HumanCompatibleAI/tensor-trust-data/main/benchmarks/extraction-robustness/v1/extraction_robustness_dataset.jsonl",
+      "provenance": "written by third-party players of the public Tensor Trust game"
+    },
+    "hackaprompt": {
+      "available": false,
+      "how_to_get_it": "huggingface-cli download hackaprompt/hackaprompt-dataset --repo-type dataset  (or pass --hackaprompt-file <csv>). Blocked networks will fail here; the file is the only requirement."
+    },
+    "agentdojo": {
+      "available": false,
+      "deliberate": true,
+      "reason": "AgentDojo injects into tool-call results inside an agent loop. SecureRAG has no agent runtime or tool layer, so the benchmark would measure a missing component rather than the defense. Reported as out of scope rather than silently omitted."
+    }
+  },
+  "A2c_full_pipeline": null
+}

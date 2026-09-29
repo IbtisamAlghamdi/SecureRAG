@@ -1,0 +1,63 @@
+{
+  "A9_l4_roc_pr": {
+    "available": false,
+    "note": "needs at least one attack-side and one benign-side results CSV carrying similarity_score"
+  },
+  "A8_classifier_validation": {
+    "available": false,
+    "note": "fill human_verdict in A8_manual_labelling_sheet.csv (complied / resisted)"
+  },
+  "A10_pooled_wilson": {
+    "note": "Wilson on pooled counts, the examiner's replacement for McNemar (c = 0 by construction).",
+    "zwsp_delete": {
+      "pooled_asr_pre_l4": {
+        "x": 532,
+        "n": 5005,
+        "pct": 10.63,
+        "wilson95": [
+          9.81,
+          11.51
+        ]
+      },
+      "pooled_fpr_pre_l4": {
+        "x": 0,
+        "n": 1665,
+        "pct": 0.0,
+        "wilson95": [
+          -0.0,
+          0.23
+        ]
+      }
+    },
+    "zwsp_space": {
+      "pooled_asr_pre_l4": {
+        "x": 523,
+        "n": 5005,
+        "pct": 10.45,
+        "wilson95": [
+          9.63,
+          11.33
+        ]
+      },
+      "pooled_fpr_pre_l4": {
+        "x": 0,
+        "n": 1665,
+        "pct": 0.0,
+        "wilson95": [
+          -0.0,
+          0.23
+        ]
+      }
+    },
+    "thesis_reference": {
+      "asr_full_pipeline_pooled_example": {
+        "x": 489,
+        "n": 5005,
+        "wilson95": [
+          8.98,
+          10.62
+        ]
+      }
+    }
+  }
+}

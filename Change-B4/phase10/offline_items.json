@@ -1,0 +1,57 @@
+{
+  "A6b_attack_ratio": {
+    "available": false,
+    "note": "needs phase2 and phase3"
+  },
+  "A15_configuration": {
+    "python": "3.11.15",
+    "numpy": "2.4.6",
+    "git_commit": "a8e807b6c8a0f4ac787fe1fb335d410c3bed6974",
+    "git_branch": "claude/code-analysis-heavy-files-njwqqm",
+    "settings": {
+      "N_CTX": 4096,
+      "TEMPERATURE": 0.7,
+      "TOP_K": 5,
+      "TOP_K_LLM": 40,
+      "MAX_NEW_TOKENS": 512,
+      "CHUNK_SIZE": 800,
+      "CHUNK_OVERLAP": 100,
+      "ANOMALY_THRESHOLD": 15.0,
+      "SEMANTIC_THRESHOLD": 0.18,
+      "LLM_MODEL_PATH": "/home/user/SecureRAG/models/mistral-7b-instruct-v0.2.Q4_K_M.gguf",
+      "DATA_DIR": "/home/user/SecureRAG/data"
+    },
+    "effective": {
+      "b64_rule_mode": "shape",
+      "zwsp_mode": "delete",
+      "l4_scope": "corpus",
+      "semantic_threshold": 0.18,
+      "anomaly_threshold": 15.0,
+      "l3_operative_bar_normal": 30.0,
+      "l3_operative_bar_high": 21.0
+    }
+  },
+  "A16_truncation": {
+    "max_seq_length": null,
+    "note": "cached sentence_bert_config.json not found; run `python3 -c \"from sentence_transformers import SentenceTransformer as S; print(S('all-MiniLM-L6-v2').max_seq_length)\"` when the machine is free",
+    "chunk_tokens": 800,
+    "chunk_overlap": 100,
+    "generation_budget": {
+      "n_ctx": 4096,
+      "top_k": 5,
+      "retrieved_tokens_max": 4000,
+      "system_prompt_tokens_approx": 190,
+      "max_output_tokens": 512,
+      "total_demand": 4702,
+      "over_budget_by": 606,
+      "note": "retrieved text + system prompt + reserved output compared against n_ctx; a positive over_budget_by is the examiner's arithmetic in item A-16, and whatever exceeds the window is dropped before generation"
+    }
+  },
+  "A17_corpus_composition": {
+    "available": true,
+    "corpus_dir": "/home/user/SecureRAG/data/corpus",
+    "n_files": 0,
+    "by_source": {},
+    "bytes_by_source": {}
+  }
+}
