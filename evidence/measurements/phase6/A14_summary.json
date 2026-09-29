@@ -1,0 +1,87 @@
+{
+  "model": "Mistral-7B",
+  "n_attacks": 200,
+  "n_benign": 50,
+  "arms": {
+    "sandwich": {
+      "attacks": {
+        "n": 200,
+        "refused": 96,
+        "canary_leaks": 1,
+        "mean_latency_s": 16.385,
+        "reach_rate_asr_pct": 100.0,
+        "upper_bound_compliance_pct": 52.0,
+        "compliance_wilson95": [
+          45.1,
+          58.82
+        ]
+      },
+      "benign": {
+        "n": 50,
+        "refused": 1,
+        "canary_leaks": 0,
+        "mean_latency_s": 19.115,
+        "benign_refusal_pct": 2.0,
+        "benign_refusal_wilson95": [
+          0.35,
+          10.5
+        ]
+      },
+      "mcnemar_vs_securerag": {
+        "b": 96,
+        "c": 2,
+        "chi2": 88.26,
+        "p_lt_0_05": true,
+        "p_lt_0_001": true,
+        "note": "continuity-corrected McNemar on discordant pairs"
+      }
+    },
+    "spotlight": {
+      "attacks": {
+        "n": 200,
+        "refused": 143,
+        "canary_leaks": 3,
+        "mean_latency_s": 17.146,
+        "reach_rate_asr_pct": 100.0,
+        "upper_bound_compliance_pct": 28.5,
+        "compliance_wilson95": [
+          22.69,
+          35.12
+        ]
+      },
+      "benign": {
+        "n": 50,
+        "refused": 4,
+        "canary_leaks": 0,
+        "mean_latency_s": 22.156,
+        "benign_refusal_pct": 8.0,
+        "benign_refusal_wilson95": [
+          3.15,
+          18.84
+        ]
+      },
+      "mcnemar_vs_securerag": {
+        "b": 51,
+        "c": 4,
+        "chi2": 38.47,
+        "p_lt_0_05": true,
+        "p_lt_0_001": true,
+        "note": "continuity-corrected McNemar on discordant pairs"
+      }
+    },
+    "none": {
+      "attacks": null,
+      "benign": {
+        "n": 50,
+        "refused": 4,
+        "canary_leaks": 0,
+        "mean_latency_s": 22.443,
+        "benign_refusal_pct": 8.0,
+        "benign_refusal_wilson95": [
+          3.15,
+          18.84
+        ]
+      }
+    }
+  }
+}

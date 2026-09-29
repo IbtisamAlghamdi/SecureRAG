@@ -1,0 +1,5 @@
+b64_rule,zwsp,detection_pre_l4_mean,detection_pre_l4_std,blocks_L1,blocks_L2,blocks_L3,internal_benign_fp,internal_benign_n,bipia_benign_fp,bipia_benign_n
+shape,delete,89.37,0.69,161.4,708.2,25.0,0,1665,6,333
+shape,space,89.55,0.67,172.0,716.0,8.4,0,1665,6,333
+decode,delete,88.43,0.84,161.4,646.0,77.8,0,1665,6,333
+decode,space,89.15,0.75,172.0,699.6,20.8,0,1665,6,333

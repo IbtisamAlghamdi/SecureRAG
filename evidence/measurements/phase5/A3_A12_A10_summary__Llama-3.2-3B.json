@@ -1,0 +1,105 @@
+{
+  "model": "Llama-3.2-3B",
+  "seeds": [
+    839,
+    941,
+    1049,
+    1151,
+    1279
+  ],
+  "per_seed": {
+    "839": {
+      "n_attacks": 1001,
+      "n_benign": 333,
+      "ASR_full_pct": 7.49,
+      "ASR_L0_L3_pct": 11.39,
+      "FPR_full_pct": 1.5,
+      "FPR_L0_L3_pct": 0.0,
+      "L4_marginal_blocks": 39,
+      "latency_attacks_mean_s": 0.479,
+      "latency_benign_mean_s": 3.611,
+      "mcnemar_L0L3_vs_Full": {
+        "b": 39,
+        "c": 0,
+        "chi2": 37.03,
+        "p_lt_0_001": true,
+        "note": "continuity-corrected McNemar on discordant pairs"
+      }
+    },
+    "941": {
+      "n_attacks": 1001,
+      "n_benign": 333,
+      "ASR_full_pct": 7.59,
+      "ASR_L0_L3_pct": 10.69,
+      "FPR_full_pct": 3.0,
+      "FPR_L0_L3_pct": 0.0,
+      "L4_marginal_blocks": 31,
+      "latency_attacks_mean_s": 0.476,
+      "latency_benign_mean_s": 3.643,
+      "mcnemar_L0L3_vs_Full": {
+        "b": 31,
+        "c": 0,
+        "chi2": 29.03,
+        "p_lt_0_001": true,
+        "note": "continuity-corrected McNemar on discordant pairs"
+      }
+    },
+    "1049": {
+      "n_attacks": 1001,
+      "n_benign": 333,
+      "ASR_full_pct": 6.49,
+      "ASR_L0_L3_pct": 10.69,
+      "FPR_full_pct": 2.4,
+      "FPR_L0_L3_pct": 0.0,
+      "L4_marginal_blocks": 42,
+      "latency_attacks_mean_s": 0.617,
+      "latency_benign_mean_s": 3.867,
+      "mcnemar_L0L3_vs_Full": {
+        "b": 42,
+        "c": 0,
+        "chi2": 40.02,
+        "p_lt_0_001": true,
+        "note": "continuity-corrected McNemar on discordant pairs"
+      }
+    },
+    "1151": {
+      "n_attacks": 1001,
+      "n_benign": 333,
+      "ASR_full_pct": 6.89,
+      "ASR_L0_L3_pct": 9.59,
+      "FPR_full_pct": 4.2,
+      "FPR_L0_L3_pct": 0.0,
+      "L4_marginal_blocks": 27,
+      "latency_attacks_mean_s": 0.503,
+      "latency_benign_mean_s": 3.865,
+      "mcnemar_L0L3_vs_Full": {
+        "b": 27,
+        "c": 0,
+        "chi2": 25.04,
+        "p_lt_0_001": true,
+        "note": "continuity-corrected McNemar on discordant pairs"
+      }
+    },
+    "1279": {
+      "n_attacks": 1001,
+      "n_benign": 333,
+      "ASR_full_pct": 7.79,
+      "ASR_L0_L3_pct": 10.89,
+      "FPR_full_pct": 4.8,
+      "FPR_L0_L3_pct": 0.0,
+      "L4_marginal_blocks": 31,
+      "latency_attacks_mean_s": 0.427,
+      "latency_benign_mean_s": 4.19,
+      "mcnemar_L0L3_vs_Full": {
+        "b": 31,
+        "c": 0,
+        "chi2": 29.03,
+        "p_lt_0_001": true,
+        "note": "continuity-corrected McNemar on discordant pairs"
+      }
+    }
+  },
+  "mean_ASR_full_pct": 7.25,
+  "mean_FPR_full_pct": 3.18,
+  "reading": "ASR_L0_L3 and ASR_full come from the SAME run, so the pair is exact rather than a comparison of two separate runs. Seeds other than 42 were never used for threshold tuning (item A-3)."
+}

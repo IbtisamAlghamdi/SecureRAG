@@ -1,0 +1,24 @@
+{
+  "model": "Mistral-7B",
+  "n_samples": 333,
+  "benign_set_file": "fpr_set.json",
+  "anomaly_threshold": 15.0,
+  "semantic_threshold": 0.1495,
+  "temperature": 0.7,
+  "max_new_tokens": 512,
+  "false_positive_rate_pct": 6.01,
+  "false_positive_count": 20,
+  "avg_latency_sec": 16.363,
+  "layer_distribution": {
+    "NONE (passed correctly)": 313,
+    "semantic": 14,
+    "anomaly": 6
+  },
+  "fpr_by_source_type": {
+    "email": 0.0,
+    "table": 8.6
+  },
+  "internal_baseline_for_comparison": {
+    "note": "see benign_fpr_diagnosis__<model>.csv for this model's own internal FPR run"
+  }
+}

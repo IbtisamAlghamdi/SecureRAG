@@ -1,0 +1,21 @@
+{
+  "embedder_limit_tokens": 256,
+  "content_tokens_per_chunk": 254,
+  "chunk_size_characters": 800,
+  "chunk_overlap_characters": 100,
+  "top_k": 5,
+  "n_ctx": 4096,
+  "max_new_tokens": 512,
+  "median_chunk_tokens": 183,
+  "context_budget_tokens": 1617,
+  "context_over_budget_by": 0,
+  "files": 308,
+  "chunks": 3804,
+  "chunks_over_limit": 352,
+  "pct_chunks_over_limit": 9.25,
+  "tokens_total": 727389,
+  "tokens_never_embedded": 15870,
+  "pct_tokens_never_embedded": 2.18,
+  "demo_n": 30,
+  "demo_embeddings_unchanged": 30
+}

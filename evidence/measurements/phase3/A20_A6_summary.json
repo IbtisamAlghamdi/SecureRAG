@@ -1,0 +1,48 @@
+{
+  "item": "A-20 / A-6",
+  "pre_l4": {
+    "per_source": {
+      "beir_nq_queries.txt": {
+        "n": 100,
+        "blocked_pre_l4": 0,
+        "fpr_pre_l4_pct": 0.0
+      },
+      "beir_scifact_queries.txt": {
+        "n": 100,
+        "blocked_pre_l4": 0,
+        "fpr_pre_l4_pct": 0.0
+      },
+      "beir_fiqa_queries.txt": {
+        "n": 100,
+        "blocked_pre_l4": 0,
+        "fpr_pre_l4_pct": 0.0
+      }
+    },
+    "total_n": 300,
+    "total_blocked": 0,
+    "fpr_pre_l4_pct": 0.0
+  },
+  "securerag": {
+    "n": 150,
+    "blocked": 0,
+    "fpr_full_pipeline_pct": 0.0,
+    "latency_mean_s": 16.828,
+    "latency_median_s": 15.675,
+    "latency_std_s": 5.627
+  },
+  "baseline": {
+    "n": 150,
+    "blocked": 0,
+    "fpr_full_pipeline_pct": 0.0,
+    "latency_mean_s": 16.921,
+    "latency_median_s": 15.985,
+    "latency_std_s": 5.005
+  },
+  "A6_legitimate_only_overhead": {
+    "baseline_mean_s": 16.921,
+    "securerag_mean_s": 16.828,
+    "overhead_s": -0.093,
+    "overhead_pct": -0.55,
+    "reading": "This is what a legitimate user pays. The 61.3% figure in the thesis is a whole-batch average over a set that is 75% attacks, most of them blocked before generation."
+  }
+}

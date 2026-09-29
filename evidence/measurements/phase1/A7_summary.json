@@ -1,0 +1,16 @@
+{
+  "item": "A-7",
+  "what": "undefended baseline over the same 986 BIPIA attacks, scored with the same compliance classifier as the defended run",
+  "model": "Mistral-7B",
+  "results_csv": "Change-B4/phase1/bipia_external_results__Mistral-7B__baseline.csv",
+  "compliance_csv": "Change-B4/phase1/compliance_classified__Mistral-7B__baseline.csv",
+  "defended_reference_from_thesis": {
+    "blocked_before_model": 420,
+    "reached": 566,
+    "complied": 157,
+    "true_compliance_asr_pct": 15.92,
+    "reach_rate_asr_pct": 57.4,
+    "neutralised_pct": 84.08
+  },
+  "next": "read the 'Estimated TRUE ASR' line printed by classify_true_compliance.py above; that is the undefended figure to place beside 15.92%."
+}

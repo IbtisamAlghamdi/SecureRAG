@@ -1,0 +1,117 @@
+{
+  "seeds": [
+    839,
+    941,
+    1049,
+    1151,
+    1279
+  ],
+  "n_attacks_pooled": 5005,
+  "parity": {
+    "expected": {
+      "L1": 826,
+      "L2": 3523,
+      "L3": 123
+    },
+    "observed": {
+      "L1": 826,
+      "L2": 3523,
+      "L3": 123
+    },
+    "matched": true
+  },
+  "blocks_by_layer": {
+    "L2": 3523,
+    "L1": 826,
+    "L3": 123
+  },
+  "by_variant": {
+    "plain": {
+      "n": 3259,
+      "detected": 2899,
+      "detection_pct": 88.95,
+      "by_layer": {
+        "L2": 2525,
+        "L1": 319,
+        "L3": 55
+      }
+    },
+    "base64": {
+      "n": 581,
+      "detected": 562,
+      "detection_pct": 96.73,
+      "by_layer": {
+        "L1": 399,
+        "L2": 163
+      }
+    },
+    "zwsp": {
+      "n": 522,
+      "detected": 500,
+      "detection_pct": 95.79,
+      "by_layer": {
+        "L2": 392,
+        "L3": 52,
+        "L1": 56
+      }
+    },
+    "homoglyph": {
+      "n": 407,
+      "detected": 294,
+      "detection_pct": 72.24,
+      "by_layer": {
+        "L2": 249,
+        "L1": 32,
+        "L3": 13
+      }
+    },
+    "context_wrap": {
+      "n": 236,
+      "detected": 217,
+      "detection_pct": 91.95,
+      "by_layer": {
+        "L2": 194,
+        "L1": 20,
+        "L3": 3
+      }
+    }
+  },
+  "semantic_camouflage_by_variant": {
+    "base64": {
+      "n": 60,
+      "detected": 60,
+      "detection_pct": 100.0
+    },
+    "context_wrap": {
+      "n": 20,
+      "detected": 4,
+      "detection_pct": 20.0
+    },
+    "homoglyph": {
+      "n": 42,
+      "detected": 5,
+      "detection_pct": 11.9
+    },
+    "plain": {
+      "n": 366,
+      "detected": 71,
+      "detection_pct": 19.4
+    },
+    "zwsp": {
+      "n": 66,
+      "detected": 47,
+      "detection_pct": 71.21
+    }
+  },
+  "l2_by_tier": {
+    "direct_injection": 1379,
+    "prompt_extraction": 925,
+    "context_poisoning": 376,
+    "authority_impersonation": 348,
+    "nested_hiding": 226,
+    "trust_escalation": 210,
+    "role_redefinition": 34,
+    "indirect_authorization": 25
+  },
+  "reading": "Detection here is by the input layers only. The output guardrail sees a generated answer, which this script does not produce, so its contribution is not included and the complete-system figures in phase5 are correspondingly higher."
+}

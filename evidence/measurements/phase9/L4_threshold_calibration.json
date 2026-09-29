@@ -1,0 +1,175 @@
+{
+  "model": "Mistral-7B",
+  "calibration_seeds": [
+    137,
+    271
+  ],
+  "n_queries": 300,
+  "n_blocked_by_pipeline": 0,
+  "index_chunks": 3804,
+  "deployed_threshold": 0.18,
+  "rule": "threshold is a quantile of legitimate-answer similarity; no attack takes part in the choice",
+  "variants": {
+    "corpus": {
+      "n": 300,
+      "min": 0.1939,
+      "max": 0.8993,
+      "mean": 0.4977,
+      "percentiles": {
+        "p0.5": 0.1958,
+        "p1": 0.2035,
+        "p2": 0.2398,
+        "p5": 0.2745,
+        "p25": 0.3584,
+        "p50": 0.4828
+      },
+      "thresholds": [
+        {
+          "target_fpr": 0.001,
+          "threshold": 0.1939,
+          "observed_fpr": 0.0,
+          "blocked": 0,
+          "n": 300,
+          "wilson95_fpr": [
+            0.0,
+            1.264
+          ],
+          "recall_on_phase8_positives": 0.0
+        },
+        {
+          "target_fpr": 0.005,
+          "threshold": 0.1941,
+          "observed_fpr": 0.0033,
+          "blocked": 1,
+          "n": 300,
+          "wilson95_fpr": [
+            0.059,
+            1.864
+          ],
+          "recall_on_phase8_positives": 0.0
+        },
+        {
+          "target_fpr": 0.01,
+          "threshold": 0.2036,
+          "observed_fpr": 0.01,
+          "blocked": 3,
+          "n": 300,
+          "wilson95_fpr": [
+            0.341,
+            2.898
+          ],
+          "recall_on_phase8_positives": 0.0094
+        },
+        {
+          "target_fpr": 0.02,
+          "threshold": 0.2399,
+          "observed_fpr": 0.02,
+          "blocked": 6,
+          "n": 300,
+          "wilson95_fpr": [
+            0.92,
+            4.294
+          ],
+          "recall_on_phase8_positives": 0.066
+        },
+        {
+          "target_fpr": 0.05,
+          "threshold": 0.275,
+          "observed_fpr": 0.05,
+          "blocked": 15,
+          "n": 300,
+          "wilson95_fpr": [
+            3.053,
+            8.085
+          ],
+          "recall_on_phase8_positives": 0.1132
+        }
+      ],
+      "at_deployed_0_18": {
+        "blocked": 0,
+        "fpr": 0.0
+      }
+    },
+    "retrieved": {
+      "n": 300,
+      "min": 0.1495,
+      "max": 0.8993,
+      "mean": 0.4872,
+      "percentiles": {
+        "p0.5": 0.1632,
+        "p1": 0.1789,
+        "p2": 0.1941,
+        "p5": 0.2399,
+        "p25": 0.3462,
+        "p50": 0.4732
+      },
+      "thresholds": [
+        {
+          "target_fpr": 0.001,
+          "threshold": 0.1495,
+          "observed_fpr": 0.0,
+          "blocked": 0,
+          "n": 300,
+          "wilson95_fpr": [
+            0.0,
+            1.264
+          ],
+          "recall_on_phase8_positives": 0.1981
+        },
+        {
+          "target_fpr": 0.005,
+          "threshold": 0.1614,
+          "observed_fpr": 0.0033,
+          "blocked": 1,
+          "n": 300,
+          "wilson95_fpr": [
+            0.059,
+            1.864
+          ],
+          "recall_on_phase8_positives": 0.217
+        },
+        {
+          "target_fpr": 0.01,
+          "threshold": 0.179,
+          "observed_fpr": 0.01,
+          "blocked": 3,
+          "n": 300,
+          "wilson95_fpr": [
+            0.341,
+            2.898
+          ],
+          "recall_on_phase8_positives": 0.2925
+        },
+        {
+          "target_fpr": 0.02,
+          "threshold": 0.1941,
+          "observed_fpr": 0.02,
+          "blocked": 6,
+          "n": 300,
+          "wilson95_fpr": [
+            0.92,
+            4.294
+          ],
+          "recall_on_phase8_positives": 0.3679
+        },
+        {
+          "target_fpr": 0.05,
+          "threshold": 0.2399,
+          "observed_fpr": 0.05,
+          "blocked": 15,
+          "n": 300,
+          "wilson95_fpr": [
+            3.053,
+            8.085
+          ],
+          "recall_on_phase8_positives": 0.5094
+        }
+      ],
+      "at_deployed_0_18": {
+        "blocked": 4,
+        "fpr": 0.0133
+      }
+    }
+  },
+  "recall_note": "recall is reported as a consequence of a threshold chosen from legitimate answers; it played no part in choosing it"
+}

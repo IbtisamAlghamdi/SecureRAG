@@ -1,0 +1,58 @@
+{
+  "classifier": "protectai/deberta-v3-base-prompt-injection-v2",
+  "seeds": [
+    839,
+    941,
+    1049,
+    1151,
+    1279
+  ],
+  "n_attacks": 5005,
+  "n_benign": 1665,
+  "classifier_detection_pct": 93.29,
+  "securerag_detection_pct": 89.35,
+  "classifier_fpr_pct": 0.6,
+  "securerag_fpr_pct": 0.0,
+  "mcnemar_securerag_vs_classifier": {
+    "b": 232,
+    "c": 429,
+    "chi2": 58.12,
+    "p_lt_0_05": true,
+    "p_lt_0_001": true
+  },
+  "detection_by_category_pct": {
+    "context_poisoning": {
+      "classifier": 97.75,
+      "securerag": 100.0
+    },
+    "conversational_drift": {
+      "classifier": 94.14,
+      "securerag": 100.0
+    },
+    "indirect_poisoning": {
+      "classifier": 99.86,
+      "securerag": 98.24
+    },
+    "nested_hiding": {
+      "classifier": 94.57,
+      "securerag": 87.83
+    },
+    "psychological_manip": {
+      "classifier": 100.0,
+      "securerag": 95.67
+    },
+    "semantic_camouflage": {
+      "classifier": 86.82,
+      "securerag": 33.75
+    },
+    "token_smuggling": {
+      "classifier": 73.43,
+      "securerag": 95.67
+    },
+    "trust_escalation": {
+      "classifier": 100.0,
+      "securerag": 96.95
+    }
+  },
+  "note": "SecureRAG's side is its input layers only (L0-L3), which is the like-for-like comparison: the classifier also judges the query text alone and never sees a generated answer."
+}

@@ -1,0 +1,11 @@
+{
+  "n_queries": 50,
+  "targeted_retrieved": 46,
+  "untargeted_retrieved": 0,
+  "both": 0,
+  "neither": 4,
+  "targeted_pct": 92.0,
+  "untargeted_pct": 0.0,
+  "n_targeted_docs": 50,
+  "n_untargeted_docs": 10
+}
