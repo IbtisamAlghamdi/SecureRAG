@@ -1,4 +1,14 @@
-"""Input Sanitization & Channel Separation — Layer 1 of SecureRAG Defense."""
+"""
+Input Sanitization & Channel Separation — Layer 1 of SecureRAG Defense
+=======================================================================
+The concept of "channel separation" is applied:
+
+- Data Channel: What the user sends as content
+
+- Command Channel: Static system instructions
+
+A successful attack requires merging the two channels—this layer prevents this merging.
+"""
 
 import re
 import base64
@@ -68,19 +78,49 @@ UNICODE_LOOKALIKE_MAP = {
     '\ufeff': '',  # BOM
 }
 
+
+# Examiner item A-22: the zero-width entries above map to '' (deletion),
+# which removes the word boundary the L2 regexes rely on. settings.ZWSP_MODE
+# selects between that frozen behaviour and the examiner's proposal of
+# substituting a normal space. Defined here, next to the map it overrides,
+# so the two can never drift apart.
+_ZERO_WIDTH_CHARS = ('\u200b', '\u200c', '\u200d', '\u2060', '\ufeff')
+
+
+def _zero_width_replacement() -> str:
+    try:
+        from src.config import settings as _settings
+        return ' ' if _settings.get_zwsp_mode() == 'space' else ''
+    except Exception:
+        return ''
+
+
 def _normalize_unicode(text: str) -> str:
     """Unicode normalization and prevention of lookalike-character (homoglyph) attacks"""
     # NFC normalization first
     text = unicodedata.normalize('NFC', text)
     # Replacing similar letters
+    zw_repl = _zero_width_replacement()
     for fake_char, real_char in UNICODE_LOOKALIKE_MAP.items():
+        if fake_char in _ZERO_WIDTH_CHARS:
+            real_char = zw_repl
         text = text.replace(fake_char, real_char)
+    if zw_repl == ' ':
+        # Collapse the runs a per-character substitution can create, so a
+        # word split by several joiners becomes one space, not five.
+        import re as _re
+        text = _re.sub(r' {2,}', ' ', text)
     # Delete control characters except for new lines.
     text = ''.join(c for c in text if unicodedata.category(c) != 'Cc' or c in '\n\r\t')
     return text
 
+
 def _decode_base64_if_attack(text: str) -> Tuple[str, bool]:
-    """Detecting and decrypting Base64 — whether the entire text is Base64 or Base64 is embedded within."""
+    """
+    Detecting and decrypting Base64 — whether the entire text is Base64
+
+    or Base64 is embedded within a sentence (the most common pattern in real-world attacks).
+    """
     ATTACK_KEYWORDS = [
         'ignore', 'bypass', 'jailbreak', 'system', 'instruction',
         'reveal', 'override', 'forget', 'admin', 'password',
@@ -131,9 +171,11 @@ def _decode_base64_if_attack(text: str) -> Tuple[str, bool]:
 
     return text, False
 
+
 def _decode_html_entities(text: str) -> str:
     """Decoding HTML entities to uncover hidden attacks"""
     return html.unescape(text)
+
 
 def _decode_hex_escapes(text: str) -> str:
     """Decode \\xNN hex-escape sequences back to their characters, the same
@@ -159,8 +201,13 @@ def _decode_hex_escapes(text: str) -> str:
 
     return re.sub(r'\\x([0-9a-fA-F]{2})', _repl, text)
 
+
 def _remove_template_injections(text: str) -> str:
-    """Removes Template Injection attempts targeting Mistral/Llama templates."""
+    """
+    Removes Template Injection attempts targeting Mistral/Llama templates.
+
+    This is a direct application of Channel Separation — preventing the user from modifying the system's help channel.
+    """
     # Remove attempts to break Mistral's prompt template
     text = re.sub(r'\[/?INST\]', '[FILTERED]', text, flags=re.IGNORECASE)
     text = re.sub(r'<</?SYS>>', '[FILTERED]', text, flags=re.IGNORECASE)
@@ -174,8 +221,14 @@ def _remove_template_injections(text: str) -> str:
     text = re.sub(r'\$\{.*?' + _suspicious + r'.*?\}',   '[FILTERED]', text, flags=re.DOTALL | re.IGNORECASE)
     return text
 
+
 def sanitize_input(text: str) -> str:
-    """Channel Separation Defense Line: Ensures that the input remains in the "data channel" and does."""
+    """
+    Channel Separation Defense Line:
+
+    Ensures that the input remains in the "data channel" and does not infiltrate the "command channel".
+
+    """
     if not text or not text.strip():
         return text
 
@@ -250,6 +303,7 @@ def sanitize_input(text: str) -> str:
         text = text[:MAX_QUERY_LENGTH] + " [TRUNCATED_FOR_SECURITY]"
 
     return text.strip()
+
 
 def get_sanitization_report(original: str, sanitized: str) -> dict:
     """Sterilization report for academic documentation"""

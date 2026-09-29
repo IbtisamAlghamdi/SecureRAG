@@ -7,7 +7,11 @@ except ImportError:
     ST_AVAILABLE = False
 
 class Embedder:
-    """Embeddings engine using sentence-transformers (all-MiniLM-L6-v2) Custom model for semantic."""
+    """
+Embeddings engine using sentence-transformers (all-MiniLM-L6-v2)
+
+Custom model for semantic search - faster and more accurate than using LLM as an embedder
+    """
     _instance = None
 
     def __new__(cls, *args, **kwargs):

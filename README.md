@@ -5,8 +5,8 @@ Generation systems against prompt injection. It runs entirely on locally deploye
 open-weight models, with no dependency on external APIs.
 
 This repository holds the implementation and the evaluation code for the master's
-thesis *SecureRAG: A Five-Layer Adaptive Defense Framework for Enterprise
-Retrieval-Augmented Generation Systems*.
+thesis *Layered Defense Against Prompt Injection in Enterprise
+Retrieval-Augmented Generation Systems: Design, Implementation, and Evaluation*.
 
 ---
 
@@ -29,18 +29,67 @@ language model is loaded. L4 is the only layer that inspects the model's output.
 
 ## Results
 
-Mistral-7B-Instruct v0.2, five seeds (42, 137, 271, 413, 509), 1,001 attacks and
-333 legitimate queries per run.
+Mistral-7B-Instruct v0.2. Five evaluation seeds — **839, 941, 1049, 1151, 1279** —
+none of which was used to set any threshold. 1,001 attacks and 333 legitimate
+queries per run, pooling to **5,005 attacks and 1,665 legitimate queries**.
 
 | | Result |
 |---|---|
-| Attack success rate | **9.77 % ± 1.08 %** (undefended baseline: 100 %) |
-| False positive rate | **0.12 % ± 0.16 %** |
-| Mean latency | **6.90 s ± 0.48 s** (undefended baseline: 17.84 s) |
-| External benchmark (BIPIA, 986 attacks) | 84.08 % neutralised end-to-end |
+| Attack bypass rate | **9.99 %** [9.19, 10.85] — 500 of 5,005 (undefended baseline: 100 %) |
+| Detection rate | **90.01 %** — 4,505 attacks blocked |
+| Input layers alone (L0–L3) | 10.65 % [9.82, 11.53] |
+| False positive rate | **0.00 %** [0.00, 0.23] over 1,665 legitimate queries |
+| Latency, attacks | 1.73 s mean over every attack query |
+| Latency, answered in full | 16.83 s defended against 16.92 s undefended, on 150 real queries (−0.55 %) |
 
-Full breakdown, including the cross-model evaluation on Llama-3.2-3B and the
-external BIPIA validation, is in [`FINAL_RESULTS.md`](FINAL_RESULTS.md).
+Intervals are 95 % Wilson intervals on the pooled counts.
+
+**Blocks by layer**, pooled: L1 826 · L2 3,523 · L3 123 · L4 33.
+
+**Calibration** used a separate set of seeds, kept apart from the five above:
+42 for the thresholds, 137 and 271 for the output guardrail.
+
+### External benchmark — BIPIA
+
+986 attacks, both the defended and the undefended pipeline run in this codebase and
+scored by the same measure, so the comparison is controlled rather than cross-paper.
+
+| | Undefended | SecureRAG |
+|---|---|---|
+| Blocked before generation | 0 | 566 (57.40 %) |
+| Complied | **98 (9.94 %)** [8.22, 11.96] | **55 (5.58 %)** [4.31, 7.19] |
+
+Intervals are disjoint. McNemar on the paired outcomes: b = 79, c = 36,
+χ² = 15.34, p < 0.001. External false positives under the deployed configuration
+are 20 of 333 documents (6.01 %), all of them on tabular material and none on any
+query written by a user.
+
+### Cross-model — Llama-3.2-3B-Instruct
+
+The four input layers return an **identical bypass rate of 10.65 %, seed by seed**,
+on both models: their decisions read only the query text. The output guardrail does
+not transfer — on Llama it adds 170 blocks but costs 3.18 % [2.44, 4.14] false
+positives against 0.00 % on Mistral, so its threshold has to be recalibrated per
+model.
+
+### Deployed configuration
+
+The reported results were produced with these settings, which are read through
+environment variables and override the file defaults:
+
+```bash
+SECURERAG_SEMANTIC_THRESHOLD=0.1495   # output guardrail
+SECURERAG_L4_SCOPE=retrieved          # compare against the retrieved passages
+SECURERAG_B64_RULE_MODE=decode        # decode Base64 and inspect
+SECURERAG_ZWSP_MODE=space             # replace zero-width characters
+```
+
+`ANOMALY_THRESHOLD` is 15.0, with L3 blocking at 30.0 and at 21.0 for queries L0
+marked HIGH risk.
+
+[`FINAL_RESULTS.md`](FINAL_RESULTS.md) records an earlier run on the calibration
+seeds (42, 137, 271, 413, 509) and is kept for the audit trail. It is **not** the
+run reported in the thesis; the numbers above are.
 
 ---
 
@@ -49,12 +98,12 @@ external BIPIA validation, is in [`FINAL_RESULTS.md`](FINAL_RESULTS.md).
 ```
 SecureRAG/
 ├── src/
-│   ├── pipeline.py                     the five-layer pipeline; L0 lives here    (325)
+│   ├── pipeline.py                     the five-layer pipeline; L0 lives here    (389)
 │   ├── config/
-│   │   └── settings.py                 all thresholds and model paths            (129)
+│   │   └── settings.py                 all thresholds and model paths            (273)
 │   ├── defenses/
-│   │   ├── sanitization/sanitize.py    L1  input sanitization                    (294)
-│   │   ├── rules/rule_filter.py        L2  nine rule tiers                       (502)
+│   │   ├── sanitization/sanitize.py    L1  input sanitization                    (318)
+│   │   ├── rules/rule_filter.py        L2  nine rule tiers                       (606)
 │   │   ├── anomaly/anomaly_detector.py L3  six-dimension anomaly score           (336)
 │   │   └── semantic/semantic_detector.py L4 output guardrail                     (127)
 │   ├── attacks/
@@ -62,7 +111,7 @@ SecureRAG/
 │   └── rag_core/
 │       ├── embeddings/embedder.py      Sentence-BERT                              (64)
 │       ├── retrieval/faiss_engine.py   FAISS index                               (112)
-│       └── generation/llm_engine.py    GGUF model loader                          (92)
+│       └── generation/llm_engine.py    GGUF model loader                          (99)
 │
 ├── thesis_evaluation.py                five-seed internal evaluation             (768)
 ├── model_select.py                     the single point where the model is chosen
@@ -122,30 +171,52 @@ python3 l3_threshold_sensitivity.py    # the L3 threshold sweep
 
 ## Reproducibility
 
-Every result reported in the thesis comes from a single frozen state of the defense code: no module
-under `src/defenses/` and no line of `src/pipeline.py` changed between the first
-evaluation run and the last. The evaluation scripts outside `src/` were extended
-during that period; the defense itself was not.
+Every result reported in the thesis comes from a single frozen state of the defense
+code: no module under `src/defenses/` and no line of `src/pipeline.py` changed
+between the first evaluation run and the last. The evaluation scripts outside `src/`
+were extended during that period; the defense itself was not.
 
-Two validated improvements were deliberately left unapplied for the same reason, and
-are kept here as patches rather than merged:
+That state is identified by [`evidence/CODE_FINGERPRINT.txt`](evidence/CODE_FINGERPRINT.txt),
+which lists the SHA-256 digest of each of the twenty-six source files under `src/`
+and carries its own digest on its final line:
+
+```
+21b7dac20dbb2f6fdc37074061bb45ccf3542b5edacbba022ed5f6ff50f287a4
+```
+
+To check a clone against it:
+
+```bash
+sed '$d' evidence/CODE_FINGERPRINT.txt | shasum -a 256
+```
+
+The value printed must be the one above. Any change to any of the twenty-six files,
+however small, changes the manifest and therefore changes that value. The manifest
+covers the defense implementation and the generators; the evaluation and analysis
+scripts sit outside it, which is why they are described as scripts rather than as
+part of the evaluated system.
+
+Two improvements were validated on the calibration batch and deliberately left
+unapplied, since applying either would have required re-running every reported
+result. They are kept as patches rather than merged:
 
 - `PROPOSED_homoglyph_map_completion.patch` — completes L1's Cyrillic look-alike
-  table, raising homoglyph-variant detection from 73.9 % to 88.1 % at no measured
-  false-positive cost.
-- `PROPOSED_table_fpr_fix.patch` — lowers the external false-positive rate from
-  1.80 % to 0.30 % at a cost of one missed attack in 1,001.
+  table. Under the evaluated configuration, homoglyph-bearing attacks are detected
+  at 72.24 % [67.69, 76.36] over 407 instances; Appendix C of the thesis reports the
+  paired coverage measurement behind this patch on the calibration batch.
+- `PROPOSED_table_fpr_fix.patch` — addresses the external false positives, all of
+  which fall on tabular documents (20 of 233, 8.6 %) and none on any user query.
 
-Applying either would have required re-running every reported result, so both are
-documented as known, quantified improvements instead.
+Both are documented as known, measured improvements to a frozen system rather than
+applied to it.
 
 ---
 
 ## Requirements
 
 Python 3.11, roughly 8 GB of RAM for Mistral-7B in GGUF, and about 12 GB of disk for
-the models and corpus. Developed and evaluated on an Apple MacBook Air (M4, 24 GB) with Metal
-acceleration; no dedicated GPU is required.
+the models and corpus. Developed and evaluated on an Apple MacBook Air (M4, 24 GB)
+with Metal acceleration; no dedicated GPU is required.
 
 ## License
 

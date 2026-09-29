@@ -1,4 +1,16 @@
-"""Rule-Based Filter — Layer 2: System Boundary Enforcement."""
+"""
+Rule-Based Filter — Layer 2: System Boundary Enforcement
+=========================================================
+It reveals 8 real attack patterns used by actual attackers:
+Pattern 1: Direct Boundary Violation
+Pattern 2: System Prompt Extraction
+Pattern 3: Role Redefinition
+Pattern 4: Psychological Manipulation (Authority Impersonation)
+Pattern 5: Nested Instruction Hiding
+Pattern 6: Context Poisoning Signals
+Pattern 7: Trust Escalation
+Pattern 8: Indirect Authorization Claims
+"""
 
 import re
 from typing import Tuple, List
@@ -153,6 +165,9 @@ AUTHORITY_PATTERNS = [
     r"(mandatory|required|authorized)\s+(compliance|security|audit|check|override)",
     r"(system|security)\s+(integrity|breach|alert|warning)\s+(check|detected|required)",
         # FIXED: excluded "override" when followed by "feature/function/
+    # setting/capability" -- a strong signal this is a product
+    # description ("an admin override feature") rather than an
+    # impersonation claim ("your admin is speaking, override...").
     r"(your\s+)?(developer|creator|provider|admin|administrator)\s+(is\s+here|speaking|override(?!\s+(feature|function|setting|capability|option))|compliance)",
     # ADDED: allowed an optional "test/exercise/simulation" noun between the
     # pretext and the authorization claim -- "this is a red team test
@@ -442,8 +457,12 @@ HIGH_RISK_TIERS = (DIRECT_PATTERNS + EXTRACTION_PATTERNS + ROLE_PATTERNS
                     + AUTHORITY_PATTERNS + NESTED_PATTERNS)
 _HIGH_RISK_COMPILED = [re.compile(p, flags=re.IGNORECASE | re.DOTALL) for p in HIGH_RISK_TIERS]
 
+
 def quick_high_risk_scan(text: str) -> bool:
-    """Fast L0 pre-screen."""
+    """Fast L0 pre-screen. True only if `text` matches one of the
+    validated, context-aware HIGH-risk patterns above -- NOT a bare
+    keyword substring check. See the comment block above for the false
+    positives this replaces."""
     lowered = text.lower()
     return any(p.search(lowered) for p in _HIGH_RISK_COMPILED)
 
@@ -453,17 +472,125 @@ def rule_based_detector(text: str) -> bool:
     detected, _, _ = rule_based_detector_detailed(text)
     return detected
 
+# ── Examiner item A-21: base64 SHAPE rule ─────────────────────────────────
+# The pattern below matches any 40+ character run of base64-alphabet
+# characters. That is a shape test, not a content test, so it cannot tell a
+# payload from a high-entropy identifier: SHA-256 digests, JWT segments, PEM
+# lines, git hashes and bcrypt hashes all match it and are blocked as
+# "direct_injection / HIGH". settings.B64_RULE_MODE selects between the frozen
+# behaviour and a content test that decodes the run first.
+B64_SHAPE_PATTERN = r"(?:[A-Za-z0-9+/]{4}){10,}"
+
+_B64_ATTACK_WORDS = (
+    "ignore", "bypass", "jailbreak", "system", "instruction", "reveal",
+    "override", "forget", "admin", "password", "unrestricted", "disregard",
+    "prompt", "credentials", "exploit", "hack", "root", "execute", "unlock",
+    "restriction", "guideline", "safety", "filter", "configuration", "persona",
+)
+
+
+_B64_LEET = str.maketrans({"0": "o", "1": "i", "3": "e", "4": "a", "5": "s",
+                          "7": "t", "9": "g", "@": "a", "$": "s"})
+
+# A hash, a key or a certificate decodes to bytes that are not language. An
+# encoded MESSAGE decodes to language. These are the commonest words in the
+# short imperative English an injection payload is written in; three or more
+# of them is the signal that the run carries text rather than entropy.
+_B64_COMMON_WORDS = (
+    " the ", " and ", " you ", " your ", " what ", " this ", " that ", " with ",
+    " for ", " from ", " are ", " is ", " to ", " of ", " in ", " on ", " all ",
+    " now ", " me ", " my ", " it ", " as ", " a ", " an ", " please ", " show ",
+    " tell ", " give ", " have ", " has ", " can ", " do ", " not ", " no ",
+)
+
+
+def _b64_normalise(decoded: str) -> str:
+    """Puts the decoded run through the same obfuscation reversal L1 already
+    performs (homoglyphs, full-width, zero-width) and then removes the
+    single-character separators the generator's encoders insert
+    ("i-g-n-o-r-e", "i.g.n.o.r.e"), so the keyword test below sees the words
+    rather than their disguises."""
+    txt = decoded
+    try:
+        from src.defenses.sanitization.sanitize import _normalize_unicode
+        txt = _normalize_unicode(txt)
+    except Exception:
+        pass
+    txt = "".join(chr(ord(c) - 0xFF01 + 0x21) if 0xFF01 <= ord(c) <= 0xFF5E
+                  else (" " if ord(c) == 0x3000 else c) for c in txt)
+    txt = txt.lower().translate(_B64_LEET)
+    dehyphen = re.sub(r"(?<=\b\w)[-._](?=\w\b)", "", txt)
+    return dehyphen
+
+
+def _b64_decoded_is_language(decoded: str) -> bool:
+    """True when the decoded run reads as natural language rather than bytes."""
+    norm = _b64_normalise(decoded)
+    padded = " " + norm.strip() + " "
+    squashed = " " + re.sub(r"[-._\s]+", "", norm.strip()) + " "
+    if any(w in padded for w in _B64_ATTACK_WORDS):
+        return True
+    if any(w in squashed for w in _B64_ATTACK_WORDS):   # i-g-n-o-r-e -> ignore
+        return True
+    hits = sum(1 for w in _B64_COMMON_WORDS if w in padded)
+    return hits >= 2
+
+
+def _b64_run_is_attack(text: str, depth: int = 0) -> bool:
+    """True when some 40+ char base64-shaped run in `text` decodes to natural
+    language. A run that decodes to binary noise -- a hash, a key, a digest, a
+    certificate -- returns False: it carries no message, so the shape alone is
+    not evidence of injection. L3 still scores it.
+
+    Recurses once, because the generator's own encoder produces base64 whose
+    payload is itself base64."""
+    import base64 as _b64
+    if depth > 2:
+        return False
+    for m in re.finditer(r"[A-Za-z0-9+/]{40,}={0,2}", text):
+        run = m.group(0)
+        pad = (-len(run.rstrip("="))) % 4
+        try:
+            decoded = _b64.b64decode(run.rstrip("=") + "=" * pad,
+                                     validate=False).decode("utf-8", "ignore")
+        except Exception:
+            continue
+        if not decoded:
+            continue
+        readable = sum(32 <= ord(c) <= 126 or c in "\n\r\t" for c in decoded)
+        if readable / max(len(decoded), 1) < 0.80:
+            continue                       # binary noise: a digest or a key
+        if _b64_decoded_is_language(decoded):
+            return True
+        if re.search(r"[A-Za-z0-9+/]{40,}={0,2}", decoded):
+            if _b64_run_is_attack(decoded, depth + 1):   # base64 inside base64
+                return True
+    return False
+
+
 def rule_based_detector_detailed(text: str) -> Tuple[bool, str, str]:
     lowered = text.lower()
+    try:
+        from src.config import settings as _settings
+        _b64_mode = _settings.get_b64_rule_mode()
+    except Exception:
+        _b64_mode = "shape"
     for tier_name, patterns, risk in ALL_TIERS:
         for pattern in patterns:
             # Make sure that re.search is used flags=re.IGNORECASE | re.DOTALL
             if re.search(pattern, lowered, flags=re.IGNORECASE | re.DOTALL):
+                if (pattern == B64_SHAPE_PATTERN and _b64_mode == "decode"
+                        and not _b64_run_is_attack(text)):
+                    continue               # shape matched, content did not
                 return True, tier_name, risk
     return False, "none", "LOW"
 
 def get_violation_details(violation_type: str) -> str:
-    """This function is modified to return a string instead of a dictionary."""
+    """
+    This function is modified to return a string instead of a dictionary.
+
+    This is the primary modification to resolve the ImportError issue in pipeline.py.
+    """
     descriptions = {
         "direct_injection": "Direct attempt to bypass system boundaries",
         "prompt_extraction": "Attempt to extract system prompt or instructions",

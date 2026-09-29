@@ -36,7 +36,7 @@ class LLMEngine:
             return
 
         self.model_path = resolved_path
-        self.temp         = getattr(settings, 'TEMPERATURE', 0.7)
+        self.temp         = getattr(settings, 'get_temperature', lambda: getattr(settings, 'TEMPERATURE', 0.7))()
         self.top_p        = getattr(settings, 'TOP_P', 0.9)
         self.top_k        = getattr(settings, 'TOP_K_LLM', 40)
         self.repeat_penalty = getattr(settings, 'REPETITION_PENALTY', 1.1)
@@ -74,7 +74,14 @@ class LLMEngine:
 
         # Clean context of empty text
         context = context.strip() if context else "No relevant context found."
-        prompt = settings.ANSWER_PROMPT_TEMPLATE.format(query=query, context=context)
+        # Change-B4 (examiner item A-9): get_answer_prompt_template() returns
+        # ANSWER_PROMPT_TEMPLATE unchanged unless settings.CANARY_TOKEN is set,
+        # in which case a unique audit string is placed inside the system block
+        # so system-prompt leakage can be measured directly instead of inferred
+        # from corpus similarity. Default behaviour is byte-identical.
+        _tpl = getattr(settings, 'get_answer_prompt_template', None)
+        template = _tpl() if callable(_tpl) else settings.ANSWER_PROMPT_TEMPLATE
+        prompt = template.format(query=query, context=context)
 
         try:
             output = self.llm(

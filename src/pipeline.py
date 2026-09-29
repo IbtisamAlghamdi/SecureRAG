@@ -1,4 +1,21 @@
-"""SecureRAG Pipeline — System Boundaries Architecture."""
+"""
+SecureRAG Pipeline — System Boundaries Architecture
+====================================================
+It integrates all layers of defense into a single pipeline that implements the concept of:
+"System Boundaries" — the structural separation of data and commands
+
+The five layers of defense:
+
+L0: ARS Pre-screening — Immediate initial risk assessment
+
+L1: Sanitization — Input sanitization + Channel separation
+
+L2: Rule-Based Filter — Detection of attack structural patterns
+
+L3: Anomaly Detection — Multidimensional statistical analysis
+
+L4: Output Guardrailing — Semantic guarding of outputs
+"""
 
 import time
 import os
@@ -32,11 +49,20 @@ BLOCK_MESSAGES = {
     "template_injection":      "🛡️ [L1-SANITIZE] Blocked: Template injection attempt targeting system channel.",
 }
 
+
 class SecureRAG:
-    """SecureRAG Framework — A five-layer defense built on System Boundaries."""
+    """
+SecureRAG Framework — A five-layer defense built on System Boundaries    """
 
     def __init__(self, enable_defenses: bool = True, model_path: str = None):
-        """`model_path` lets a caller pick which downloaded GGUF model to use for the generator (see."""
+        """
+        `model_path` lets a caller pick which downloaded GGUF model to use
+        for the generator (see model_select.py) WITHOUT touching anything
+        else -- defense thresholds, corpus, retrieval, chunking all come
+        from settings.py exactly the same way regardless of model choice,
+        so swapping models is a true apples-to-apples comparison. Defaults
+        to whatever settings.LLM_MODEL_PATH currently points to.
+        """
         self.enable_defenses = enable_defenses
         self.embedder  = Embedder()
         self.retriever = FaissRetriever(
@@ -84,6 +110,9 @@ class SecureRAG:
 
         return "LOW"
 
+    # ─────────────────────────────────────────────────────────────────────────
+    # RAG Context Retrieval
+    # ─────────────────────────────────────────────────────────────────────────
     def _get_rag_context(self, query: str) -> str:
         """
         Retrieve context from a trusted knowledge base.
@@ -122,11 +151,41 @@ class SecureRAG:
             indices, scores = self.retriever.search(q_vec, k=settings.TOP_K)
             docs = self.retriever.get_docs(indices)
             if not docs:
+                self._last_retrieved_idx = []
                 return "No relevant context found in the knowledge base."
 
             # Filtering related results (cosine similarity threshold)
-            relevant = [doc for doc, sc in zip(docs, scores) if float(sc) > 0.15]
-            selected = relevant if relevant else docs[:2]
+            # Built from (index, score) rather than from get_docs()'s output,
+            # which silently drops out-of-range ids and would misalign a
+            # zip(docs, scores) if FAISS ever returned one.
+            n_docs = len(self.retriever.documents)
+            valid = [(int(i), float(sc)) for i, sc in zip(indices, scores)
+                     if 0 <= int(i) < n_docs]
+            pairs = [(i, self.retriever.documents[i]) for i, sc in valid
+                     if sc > 0.15]
+            if not pairs:
+                pairs = [(i, self.retriever.documents[i]) for i, _ in valid][:2]
+            # A-5: the retrieved passage is untrusted input, so it gets the
+            # same detector the query gets. A flagged passage is dropped; the
+            # rest still answer the question. See settings.CHUNK_SCAN for why
+            # the scan is L1+L2 and not L1+L2+L3.
+            scan = getattr(settings, "get_chunk_scan", lambda: "off")()
+            self._last_dropped_chunks = []
+            if scan != "off" and pairs:
+                kept = []
+                for i, doc in pairs:
+                    why = self._chunk_is_hostile(doc, scan)
+                    (self._last_dropped_chunks if why else kept).append(
+                        (i, why) if why else (i, doc))
+                pairs = [(i, d) for i, d in kept]
+                if not pairs:
+                    self._last_retrieved_idx = []
+                    return "No relevant context found in the knowledge base."
+
+            # L4 under L4_SCOPE="retrieved" needs to know WHICH passages were
+            # put in front of the model, and this is the only place that knows.
+            self._last_retrieved_idx = [i for i, _ in pairs]
+            selected = [doc for _, doc in pairs]
             joined = "\n\n---\n\n".join(selected)
 
             border = "=" * 15
@@ -136,6 +195,30 @@ class SecureRAG:
             return f"{border}\n{joined}\n{border}\n{reminder}"
         except Exception as e:
             return f"Context retrieval error: {str(e)}"
+
+    def _chunk_is_hostile(self, passage: str, scan: str):
+        """Runs the query-side detectors over a retrieved passage.
+
+        Returns the layer that objected, or None. Nothing here is new: it is
+        the same sanitizer and the same rule tiers the query goes through, so
+        no pattern is added and nothing is fitted to the poisoning experiment.
+        """
+        try:
+            rep = get_sanitization_report(passage, sanitize_input(passage))
+            if rep["had_template_inj"]:
+                return "L1:template_injection"
+            if rep["had_injection"] or rep["had_base64"]:
+                return "L1:sanitization"
+            detected, vtype, _risk = rule_based_detector_detailed(passage)
+            if detected:
+                return f"L2:{vtype}"
+            if scan == "l1l2l3":
+                score = compute_anomaly_score(passage)
+                if score > settings.get_anomaly_threshold() * 2.0:
+                    return "L3:anomaly"
+        except Exception:
+            return None            # a scan failure must never drop a passage
+        return None
 
     # ────────────────────
     # Main Pipeline
@@ -229,8 +312,18 @@ class SecureRAG:
             l4_sim_score = None
             l4_query_response_sim = None
             if response and (risk_level in ["HIGH", "MEDIUM"] or anomaly_score > 0):
+                # Chapter 3 describes this comparison as being against the
+                # documents retrieved for the query. "corpus" keeps the frozen
+                # behaviour (the whole index); "retrieved" is what Chapter 3
+                # describes. See settings.L4_SCOPE.
+                _ref = self.retriever.get_embeddings()
+                _scope = getattr(settings, "get_l4_scope", lambda: "corpus")()
+                if _scope == "retrieved":
+                    _idx = getattr(self, "_last_retrieved_idx", None)
+                    if _idx:
+                        _ref = _ref[_idx]
                 suspicious, sim_score = semantic_response_is_suspicious(
-                    response, self.retriever.get_embeddings(), self.embedder
+                    response, _ref, self.embedder
                 )
                 l4_checked  = True
                 l4_sim_score = round(sim_score, 4)
