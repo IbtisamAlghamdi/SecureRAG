@@ -177,11 +177,11 @@ between the first evaluation run and the last. The evaluation scripts outside `s
 were extended during that period; the defense itself was not.
 
 That state is identified by [`evidence/CODE_FINGERPRINT.txt`](evidence/CODE_FINGERPRINT.txt),
-which lists the SHA-256 digest of each of the twenty-six source files under `src/`
+which lists the SHA-256 digest of each of the twenty-two source files under `src/`
 and carries its own digest on its final line:
 
 ```
-21b7dac20dbb2f6fdc37074061bb45ccf3542b5edacbba022ed5f6ff50f287a4
+d6744aea2e56c4cb0d889a3cce64b35deb28385cdd20b52519934d8963d465aa
 ```
 
 To check a clone against it:
@@ -190,7 +190,7 @@ To check a clone against it:
 sed '$d' evidence/CODE_FINGERPRINT.txt | shasum -a 256
 ```
 
-The value printed must be the one above. Any change to any of the twenty-six files,
+The value printed must be the one above. Any change to any of the twenty-two files,
 however small, changes the manifest and therefore changes that value. The manifest
 covers the defense implementation and the generators; the evaluation and analysis
 scripts sit outside it, which is why they are described as scripts rather than as
