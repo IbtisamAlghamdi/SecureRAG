@@ -19,7 +19,7 @@ A query passes through five layers in order and stops at the first one that bloc
 | **L0** | Adaptive Risk Sensor | Classifies the query LOW, MEDIUM or HIGH. It does not block; the classification lowers L3's bar for high-risk queries and opens L4's gate. |
 | **L1** | Input Sanitization | Reverses obfuscation: Unicode homoglyphs, zero-width characters, Base64 payloads, template injection. |
 | **L2** | Rule-Based Filter | Matches the sanitized query against nine named pattern tiers. |
-| **L3** | Anomaly Detection | Scores the query across six statistical dimensions and blocks structurally anomalous input. |
+| **L3** | Anomaly Detection | Scores the query across five of six statistical dimensions together with a group of framing patterns, and blocks structurally anomalous input. |
 | **L4** | Semantic Guardrail | After generation, compares the response against the knowledge base and suppresses answers that have drifted outside it. |
 
 L0 through L3 read only the query text, so their decisions are independent of which
@@ -47,7 +47,7 @@ Intervals are 95 % Wilson intervals on the pooled counts.
 **Blocks by layer**, pooled: L1 826 · L2 3,523 · L3 123 · L4 33.
 
 **Calibration** used a separate set of seeds, kept apart from the five above:
-42 for the thresholds, 137 and 271 for the output guardrail.
+42, 137, 271, 413 and 509 for the anomaly threshold; 137 and 271 for the output guardrail.
 
 ### External benchmark — BIPIA
 
@@ -132,6 +132,7 @@ SecureRAG/
 ├── generate_final_charts.py            all thesis figures
 ├── run_demo_appendix.py                the qualitative demonstration
 ├── verify_no_model.py                  generator integrity checks, no model needed
+├── run_final.sh                        runs every stage above in order, and resumes
 │
 ├── download_models.py                  fetches the GGUF models
 ├── download_datasets.py                fetches BEIR and Wikipedia
@@ -318,7 +319,9 @@ python3 run_demo_appendix.py --model Mistral-7B
 | Path | Holds |
 |---|---|
 | `Change-B4/phase*/` | the per-phase result files of each step above |
-| `results/` | the per-model artefacts: BIPIA rows and summaries, per-layer tallies, the classified compliance sheets |
+| `evidence/` | the deployed-configuration run: the external benchmark on both arms, the compliance verdicts, the code manifest, and `measurements/` mapping every table in Chapter 4 to the file it is read from |
+| `evidence/archive_experimental_runs/` | the earlier external configuration (threshold 0.18, whole-index scope), suffixed `__thr018_corpus`, kept for the audit trail |
+| `results/` | the remaining per-model artefacts: the Llama external run, the external false-positive runs, per-layer tallies, the holdout sets |
 | `eval_set.json`, `fpr_set.json` | the attack and legitimate sets as generated |
 | `evidence/CODE_FINGERPRINT.txt` | the manifest of the code state all of this was run on |
 

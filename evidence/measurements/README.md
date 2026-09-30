@@ -1,31 +1,31 @@
 # Measurement outputs behind Chapter 4
 
 Each file is the summary written by the script of the same phase in
-`evidence/changeb4/`. Figures in the thesis are read from these files.
+`changeb4/`. Figures in the thesis are read from these files.
 
 | Chapter 4 item | File |
 |---|---|
 | Table 4.3, 4.5 (L4 row), §4.5.1, §4.5.2 | `phase5/A3_A12_A10_summary__Mistral-7B.json` |
-| Tables 4.16–4.18, cross-model | `phase5/A3_A12_A10_summary__Llama-3.2-3B.json` |
+| Tables 4.17–4.19, cross-model | `phase5/A3_A12_A10_summary__Llama-3.2-3B.json` |
 | §4.5.3, manual compliance labels | `phase2/A1_summary.json`, `phase2/A8_manual_labelling_sheet.csv` |
 | Table 4.4, latency; 300 real queries | `phase3/A20_A6_summary.json` |
 | Table 4.5 (nine rule tiers), Tables 4.9, 4.10 | `phase14/A29_variant_tier_summary.json` |
-| Table 4.6, Table 4.8 ablation | `phase11/A12_ablation_summary.json` |
+| Table 4.6 per-category detection, Table 4.8 ablation | `phase11/A12_ablation_summary.json` |
 | Table 4.7, output-guardrail ROC | `phase8/A9_l4_comparison.json` |
 | Semantic threshold 0.1495; recall 19.81 % and 36.79 % | `phase9/L4_threshold_calibration.json` |
 | Table 4.12, undefended arm | `phase1/bipia_external_summary__Mistral-7B__baseline.json`, `phase1/A7_summary.json` |
 | Table 4.12, defended arm (deployed) | `phase1_defended_final/bipia_external_summary__Mistral-7B.json` |
-| Table 4.13, left column (threshold 0.18) | `phase1_defended/bipia_external_summary__Mistral-7B.json` |
-| Table 4.15, knowledge-base poisoning | `phase7/A5_summary.json`, `phase7/A5_kb_poisoning_rows.csv` |
+| §4.5.12.3, the earlier configuration (threshold 0.18, whole-index scope) | `phase1_defended/bipia_external_summary__Mistral-7B.json` |
+| Table 4.16, knowledge-base poisoning | `phase7/A5_summary.json`, `phase7/A5_kb_poisoning_rows.csv` |
 | Poisoning repeat, payload at end of document | `phase7/A5_summary__tail.json` |
 | Poisoning retrieval control | `phase7/A5_retrieval_condition.json` |
-| Table 4.19, reference defenses | `phase6/A14_summary.json` |
-| Tables 4.20, 4.21, trained classifier | `phase13/A14_classifier_arm_summary.json` |
-| Table 4.23 left column, table as evaluated | `phase15/A30_adaptive_summary__as_evaluated.json` |
-| Table 4.23 right column, four entries added | `phase15/A30_adaptive_summary__complete_map.json` |
+| Table 4.20, reference defenses | `phase6/A14_summary.json` |
+| Tables 4.21, 4.22, trained classifier | `phase13/A14_classifier_arm_summary.json` |
+| Table 4.24 left column, table as evaluated | `phase15/A30_adaptive_summary__as_evaluated.json` |
+| Table 4.24 right column, four entries added; Table 4.25 by category | `phase15/A30_adaptive_summary__complete_map.json` |
 | Embedding-window truncation, §4.6 | `phase12/A16_truncation_summary.json` |
-| Sanitizer switch matrix (Appendix) | `phase0d/switch_matrix.csv` |
-| Section 5.5 and the appendix: the completed look-alike table | `patched_table/` |
+| Sanitizer switch matrix (Table C.3) | `phase0d/switch_matrix.csv` |
+| Section 5.5 and Appendix C: the completed look-alike table | `patched_table/` |
 
 ## Seed sets
 
@@ -54,7 +54,8 @@ run time through `SECURERAG_SEMANTIC_THRESHOLD`, as
 `evidence/` holds the deployed configuration for Mistral-7B. The earlier
 configuration — output check against the whole index at threshold 0.18 —
 is kept under `evidence/archive_experimental_runs/` with the suffix
-`__thr018_corpus`. No external attack run under the deployed configuration
+`__thr018_corpus`. `results/` holds the per-model artefacts of the other
+phases. No external attack run under the deployed configuration
 exists for Llama-3.2-3B; Chapter 4 reports no external figure for that
 model.
 

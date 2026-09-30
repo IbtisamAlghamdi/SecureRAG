@@ -1,3 +1,12 @@
+> **Superseded. Not the results reported in the thesis.**
+>
+> This file records an earlier run, on the calibration seeds
+> (42, 137, 271, 413, 509) and under an earlier configuration. It is kept
+> for the audit trail only. The reported results are in
+> [`README.md`](README.md): bypass rate 9.99 %, false positive rate 0.00 %,
+> external detection 57.40 %. The metric was also renamed after this file
+> was written: what appears below as "ASR" is the attack bypass rate.
+
 # SecureRAG — Final Results
 
 **Status: complete.** All evaluations finished. Every figure below comes from a real run of the frozen
